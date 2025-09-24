@@ -822,41 +822,45 @@
                 generateWinningCode();
             }
 
-            // Firebase에 추첨 시작 신호 전송
-            if (database) {
-                const drawData = {
-                    isActive: true,
-                    started: true,
-                    timestamp: Date.now(),
-                    winningCode: gameSettings.winningCode
-                };
-                
-                console.log('Firebase에 추첨 데이터 전송:', drawData);
-                
-                database.ref('drawState').set(drawData)
-                    .then(() => {
-                        console.log('추첨 시작 신호 전송 완료!');
-                        drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
-                    })
-                    .catch(error => {
-                        console.error('추첨 시작 신호 전송 실패:', error);
-                        alert('추첨 시작에 실패했습니다.');
+            // 게임 설정을 먼저 저장하여 최신 설정이 반영되도록 함
+            saveAllData().then(() => {
+                // Firebase에 추첨 시작 신호 전송
+                if (database) {
+                    const drawData = {
+                        isActive: true,
+                        started: true,
+                        timestamp: Date.now(),
+                        winningCode: gameSettings.winningCode,
+                        gameSettings: gameSettings // 최신 게임 설정도 함께 전송
+                    };
+                    
+                    console.log('Firebase에 추첨 데이터 전송:', drawData);
+                    
+                    return database.ref('drawState').set(drawData);
+                }
+            }).then(() => {
+                if (database) {
+                    console.log('추첨 시작 신호 전송 완료!');
+                    drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
+
+                    // 추첨 완료 감지
+                    database.ref('drawState/completed').on('value', (snapshot) => {
+                        if (snapshot.val() === true && isDrawing) {
+                            console.log('추첨 완료 신호 받음');
+                            finishDraw();
+                        }
                     });
-
-                // 추첨 완료 감지
-                database.ref('drawState/completed').on('value', (snapshot) => {
-                    if (snapshot.val() === true && isDrawing) {
-                        console.log('추첨 완료 신호 받음');
-                        finishDraw();
-                    }
-                });
-            } else {
-                // 오프라인 모드에서는 12초 후 자동 완료
-                setTimeout(finishDraw, 12000);
-            }
-
-            // 게임 설정도 최신으로 저장
-            saveAllData();
+                } else {
+                    // 오프라인 모드에서는 12초 후 자동 완료
+                    setTimeout(finishDraw, 12000);
+                }
+            }).catch(error => {
+                console.error('추첨 시작 신호 전송 실패:', error);
+                alert('추첨 시작에 실패했습니다.');
+                isDrawing = false;
+                document.getElementById('startDrawBtn').disabled = false;
+                document.getElementById('resetDrawBtn').disabled = true;
+            });
         }
 
         function finishDraw() {
@@ -1231,7 +1235,7 @@
             renderManualSelectors();
         }
 
-        // 모든 데이터 저장 (히스토리 저장 방식 개선)
+        // 모든 데이터 저장 (Promise 반환하도록 수정)
         function saveAllData() {
             const allData = {
                 gameSettings: gameSettings,
@@ -1240,14 +1244,14 @@
             };
 
             if (database) {
-                database.ref().update(allData) // set 대신 update 사용
+                return database.ref().update(allData) // Promise 반환
                     .then(() => {
                         console.log('데이터 저장 완료');
                         showSaveIndicator();
                     })
                     .catch(error => {
                         console.error('저장 오류:', error);
-                        alert('데이터 저장에 실패했습니다: ' + error.message);
+                        throw new Error('데이터 저장에 실패했습니다: ' + error.message);
                     });
             } else {
                 // 오프라인 모드
@@ -1255,6 +1259,7 @@
                 localStorage.setItem('users', JSON.stringify(users));
                 localStorage.setItem('drawHistory', JSON.stringify(drawHistory));
                 showSaveIndicator();
+                return Promise.resolve(); // 성공 Promise 반환
             }
         }
 
