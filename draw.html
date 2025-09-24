@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>교육용 로또 - 추첨</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* 헤더 */
+        .header {
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 4rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.2); }
+            to { text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3), 0 0 30px rgba(255, 255, 255, 0.4); }
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            color: #fbbf24;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        /* 슬롯머신 컨테이너 */
+        .slot-machine {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 30px;
+            padding: 60px 40px;
+            margin-bottom: 50px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .slots-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .slot {
+            position: relative;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 20px;
+            height: 300px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 4px solid #fbbf24;
+        }
+
+        .slot-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .slot-window {
+            position: relative;
+            height: 200px;
+            background: #f8fafc;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 3px solid #e5e7eb;
+        }
+
+        .slot-reel {
+            position: absolute;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            top: 0;
+            transition: transform 0.1s ease-out;
+        }
+
+        .slot-item {
+            width: 100%;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #1f2937;
+            background: white;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .slot-item:last-child {
+            border-bottom: none;
+        }
+
+        /* 슬롯 상태별 스타일 */
+        .slot.spinning {
+            border-color: #ef4444;
+            animation: slotPulse 0.5s ease-in-out infinite alternate;
+        }
+
+        .slot.confirmed {
+            border-color: #10b981;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
+        }
+
+        @keyframes slotPulse {
+            from { 
+                border-color: #ef4444;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(239, 68, 68, 0.3);
+            }
+            to { 
+                border-color: #fbbf24;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 30px rgba(251, 191, 36, 0.5);
+            }
+        }
+
+        /* 큰 결과 표시 */
+        .result-display {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border-radius: 25px;
+            padding: 40px;
+            margin-bottom: 40px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-title {
+            color: white;
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .result-code {
+            color: white;
+            font-size: 6rem;
+            font-weight: bold;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.4);
+            letter-spacing: 20px;
+            margin-bottom: 20px;
+            animation: resultGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes resultGlow {
+            from { 
+                text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.3);
+                transform: scale(1);
+            }
+            to { 
+                text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.4), 0 0 40px rgba(255, 255, 255, 0.6);
+                transform: scale(1.02);
+            }
+        }
+
+        /* 축하 메시지 */
+        .celebration {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .celebration h2 {
+            color: white;
+            font-size: 3rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            animation: bounce 1s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        .celebration p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        /* 관리자 대기 메시지 */
+        .admin-message {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            text-align: center;
+        }
+
+        .admin-message h3 {
+            color: white;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .admin-message p {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+        }
+
+        /* 파티클 효과 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .particle {
+            position: absolute;
+            font-size: 2rem;
+            animation: fall 3s linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* 상태 표시 */
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 100;
+        }
+
+        .status-connected {
+            background: rgba(16, 185, 129, 0.9);
+            color: white;
+        }
+
+        .status-disconnected {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1200px) {
+            .header h1 {
+                font-size: 3rem;
+            }
+            
+            .result-code {
+                font-size: 4rem;
+                letter-spacing: 15px;
+            }
+            
+            .slots-container {
+                gap: 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .slot-machine {
+                padding: 30px 20px;
+            }
+            
+            .slots-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .slot {
+                height: 250px;
+            }
+            
+            .slot-item {
+                font-size: 3rem;
+                height: 160px;
+            }
+            
+            .result-code {
+                font-size: 3rem;
+                letter-spacing: 10px;
+            }
+            
+            .celebration h2 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                padding: 15px 30px;
+                font-size: 1.2rem;
+                min-width: 150px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .slots-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .result-code {
+                font-size: 2rem;
+                letter-spacing: 5px;
+            }
+            
+            .admin-message {
+                padding: 20px;
+            }
+            
+            .admin-message h3 {
+                font-size: 1.5rem;
+            }
+            
+            .admin-message p {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>🎰 로또 추첨</h1>
+            <p class="subtitle">당첨 번호를 확인하세요!</p>
+            <p class="status" id="drawStatus">추첨을 시작하세요</p>
+        </div>
+
+        <!-- 슬롯머신 -->
+        <div class="slot-machine">
+            <div class="slots-container" id="slotsContainer">
+                <!-- 동적으로 생성됩니다 -->
+            </div>
+
+            <!-- 현재 결과 표시 (추첨 완료 후에만 표시) -->
+            <div class="result-display" id="resultDisplay" style="display: none;">
+                <div class="result-title">🏆 당첨 번호 🏆</div>
+                <div class="result-code" id="resultCode">1 - A - 가 - ♠</div>
+            </div>
+        </div>
+
+        <!-- 축하 메시지 (완료 후 표시) -->
+        <div class="celebration" id="celebration" style="display: none;">
+            <h2>🎉 축하합니다! 🎉</h2>
+            <p>당첨 번호가 결정되었습니다!</p>
+            <p>참가자 여러분의 번호를 확인해보세요!</p>
+        </div>
+
+        <!-- 관리자 대기 메시지 -->
+        <div class="admin-message" id="adminMessage">
+            <h3>관리자가 추첨을 시작하기를 기다리고 있습니다...</h3>
+            <p>추첨은 관리자 페이지에서 시작됩니다</p>
+        </div>
+    </div>
+
+    <!-- 상태 표시 -->
+    <div id="connectionStatus" class="status-indicator status-disconnected">
+        연결 확인 중...
+    </div>
+
+    <!-- 파티클 효과 컨테이너 -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
+
+    <script>
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "your-api-key",
+            authDomain: "your-auth-domain", 
+            databaseURL: "your-database-url",
+            projectId: "your-project-id",
+            storageBucket: "your-storage-bucket",
+            messagingSenderId: "your-sender-id",
+            appId: "your-app-id"
+        };
+
+        // Firebase 초기화
+        let database;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            
+            setTimeout(() => {
+                document.getElementById('connectionStatus').textContent = '연결됨';
+                document.getElementById('connectionStatus').className = 'status-indicator status-connected';
+            }, 1000);
+        } catch (error) {
+            console.log('Firebase 설정이 필요합니다:', error);
+            document.getElementById('connectionStatus').textContent = '오프라인';
+        }
+
+        // 전역 변수들
+        let gameSettings = null;
+        let currentWinningCode = ['?', '?', '?', '?'];
+        let isDrawing = false;
+        let currentDrawingPosition = 0;
+        let slotIntervals = [];
+
+        // DOM 요소들
+        const slotsContainer = document.getElementById('slotsContainer');
+        const resultCode = document.getElementById('resultCode');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const drawStatus = document.getElementById('drawStatus');
+        const celebration = document.getElementById('celebration');
+        const adminMessage = document.getElementById('adminMessage');
+        const particles = document.getElementById('particles');
+
+        // 페이지 초기화
+        function initializePage() {
+            loadGameSettings();
+            setupEventListeners();
+        }
+
+        // 게임 설정 로드 및 추첨 상태 감지
+        function loadGameSettings() {
+            if (database) {
+                // 게임 설정 감지
+                database.ref('gameSettings').on('value', (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        gameSettings = data;
+                        currentWinningCode = data.winningCode || ['?', '?', '?', '?'];
+                        initializeSlots();
+                    }
+                });
+
+                // 추첨 상태 감지 (관리자가 추첨을 시작하면)
+                database.ref('drawState').on('value', (snapshot) => {
+                    const drawState = snapshot.val();
+                    if (drawState && drawState.isActive && !isDrawing) {
+                        startDraw();
+                    } else if (drawState && drawState.shouldReset) {
+                        resetDraw();
+                        // 리셋 플래그 해제
+                        database.ref('drawState/shouldReset').set(false);
+                    }
+                });
+            } else {
+                // 오프라인 모드
+                const savedSettings = localStorage.getItem('gameSettings');
+                if (savedSettings) {
+                    gameSettings = JSON.parse(savedSettings);
+                    currentWinningCode = gameSettings.winningCode || ['?', '?', '?', '?'];
+                } else {
+                    // 기본 설정
+                    gameSettings = {
+                        positions: [
+                            ['1', '2', '3', '4'],
+                            ['A', 'B', 'C', 'D'],
+                            ['가', '나', '다', '라'],
+                            ['♠', '♥', '♦', '♣']
+                        ],
+                        winningCode: ['1', 'A', '가', '♠']
+                    };
+                    currentWinningCode = gameSettings.winningCode;
+                }
+                initializeSlots();
+            }
+        }
+
+        // 슬롯 초기화
+        function initializeSlots() {
+            if (!gameSettings) return;
+
+            slotsContainer.innerHTML = '';
+            
+            gameSettings.positions.forEach((position, index) => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'slot';
+                slotDiv.id = `slot-${index}`;
+                
+                slotDiv.innerHTML = `
+                    <div class="slot-header">${index + 1}번째</div>
+                    <div class="slot-window">
+                        <div class="slot-reel" id="reel-${index}">
+                            ${createSlotItems(position)}
+                        </div>
+                    </div>
+                `;
+                
+                slotsContainer.appendChild(slotDiv);
+            });
+        }
+
+        // 슬롯 아이템 생성 (무한 스크롤용)
+        function createSlotItems(position) {
+            const items = [...position, ...position, ...position]; // 3번 반복
+            return items.map(item => `<div class="slot-item">${item}</div>`).join('');
+        }
+
+        // 결과 표시 업데이트
+        function updateResultDisplay() {
+            resultCode.textContent = currentWinningCode.join(' - ');
+        }
+
+        // 추첨 시작 (관리자 트리거)
+        function startDraw() {
+            if (isDrawing || !gameSettings) return;
+
+            isDrawing = true;
+            currentDrawingPosition = 0;
+            celebration.style.display = 'none';
+            resultDisplay.style.display = 'none';
+            adminMessage.style.display = 'none';
+            
+            drawStatus.textContent = '추첨 진행 중...';
+            
+            // 자동 모드면 새 당첨 번호 생성
+            if (gameSettings.isAutoMode) {
+                currentWinningCode = gameSettings.positions.map(position => 
+                    position[Math.floor(Math.random() * position.length)]
+                );
+                gameSettings.winningCode = currentWinningCode;
+            }
+
+            // 모든 슬롯 리셋
+            resetAllSlots();
+            
+            // 첫 번째 슬롯부터 시작
+            setTimeout(() => {
+                drawNextSlot();
+            }, 500);
+        }
+
+        // 모든 슬롯 리셋
+        function resetAllSlots() {
+            gameSettings.positions.forEach((_, index) => {
+                const slot = document.getElementById(`slot-${index}`);
+                const reel = document.getElementById(`reel-${index}`);
+                
+                slot.className = 'slot';
+                reel.style.transform = 'translateY(0px)';
+            });
+        }
+
+        // 다음 슬롯 추첨
+        function drawNextSlot() {
+            if (currentDrawingPosition >= 4) {
+                finishDraw();
+                return;
+            }
+
+            const slotIndex = currentDrawingPosition;
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            const reel = document.getElementById(`reel-${slotIndex}`);
+            const targetValue = currentWinningCode[slotIndex];
+            const position = gameSettings.positions[slotIndex];
+            
+            // 슬롯 스피닝 상태로 변경
+            slot.classList.add('spinning');
+            
+            // 3초간 더 빠른 스피닝 애니메이션 (50ms 간격)
+            let spinCount = 0;
+            const maxSpins = 60; // 3초 * 20fps (더 빠르게)
+            const spinInterval = setInterval(() => {
+                const randomOffset = Math.floor(Math.random() * position.length) * 200; // 각 아이템 높이 200px
+                reel.style.transform = `translateY(-${randomOffset}px)`;
+                
+                spinCount++;
+                
+                if (spinCount >= maxSpins) {
+                    clearInterval(spinInterval);
+                    
+                    // 최종 위치로 이동 (목표 값 위치)
+                    const targetIndex = position.indexOf(targetValue);
+                    const finalOffset = targetIndex * 200;
+                    reel.style.transform = `translateY(-${finalOffset}px)`;
+                    
+                    // 확정 상태로 변경
+                    slot.classList.remove('spinning');
+                    slot.classList.add('confirmed');
+                    
+                    // 다음 슬롯으로 이동
+                    currentDrawingPosition++;
+                    setTimeout(() => {
+                        drawNextSlot();
+                    }, 500);
+                }
+            }, 50); // 20fps (더 빠른 스피닝)
+        }
+
+        // 추첨 완료
+        function finishDraw() {
+            isDrawing = false;
+            drawStatus.textContent = '추첨 완료!';
+            
+            // 최종 결과 표시
+            resultCode.textContent = currentWinningCode.join(' - ');
+            resultDisplay.style.display = 'block';
+            
+            // 축하 메시지 표시
+            setTimeout(() => {
+                celebration.style.display = 'block';
+                createParticles();
+            }, 1000);
+            
+            // Firebase 추첨 상태 업데이트
+            if (database) {
+                database.ref('drawState').set({
+                    isActive: false,
+                    completed: true,
+                    timestamp: Date.now()
+                });
+            }
+            
+            // Firebase에 결과 저장 (있다면)
+            saveDrawResult();
+        }
+
+        // 파티클 효과 생성
+        function createParticles() {
+            const symbols = ['🎉', '🎊', '✨', '🎈', '🏆', '🎯'];
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    particle.style.left = Math.random() * 100 + '%';
+                    particle.style.animationDelay = Math.random() * 2 + 's';
+                    particle.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    
+                    particles.appendChild(particle);
+                    
+                    setTimeout(() => {
+                        if (particle.parentNode) {
+                            particle.parentNode.removeChild(particle);
+                        }
+                    }, 4000);
+                }, i * 100);
+            }
+        }
+
+        // 추첨 결과 저장
+        function saveDrawResult() {
+            if (!database) return;
+
+            const drawResult = {
+                timestamp: Date.now(),
+                winningCode: currentWinningCode,
+                method: gameSettings.isAutoMode ? 'auto' : 'manual'
+            };
+
+            // 기존 히스토리에 추가
+            database.ref('drawHistory').push(drawResult)
+                .then(() => {
+                    console.log('추첨 결과가 저장되었습니다.');
+                })
+                .catch(error => {
+                    console.error('저장 오류:', error);
+                });
+
+            // 게임 설정의 당첨 코드도 업데이트
+            database.ref('gameSettings/winningCode').set(currentWinningCode);
+        }
+
+        // 다시 추첨 (관리자 트리거)
+        function resetDraw() {
+            if (isDrawing) return;
+            
+            celebration.style.display = 'none';
+            resultDisplay.style.display = 'none';
+            adminMessage.style.display = 'block';
+            drawStatus.textContent = '추첨을 시작하세요';
+            resetAllSlots();
+            
+            // 파티클 제거
+            particles.innerHTML = '';
+        }
+
+        // 이벤트 리스너 설정 (키보드 단축키 제거)
+        function setupEventListeners() {
+            // 관리자 페이지에서 모든 것을 제어하므로 이벤트 리스너 최소화
+        }
+
+        // 페이지 로드시 초기화
+        document.addEventListener('DOMContentLoaded', initializePage);
+    </script>
+</body>
+</html>
