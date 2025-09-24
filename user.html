@@ -15,10 +15,8 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 0;
+            padding: 0;
         }
 
         .container {
@@ -34,6 +32,7 @@
             padding: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             text-align: center;
+            margin: 20px;
         }
 
         .header {
@@ -146,34 +145,62 @@
             background: #4b5563;
         }
 
-        /* 사용자 정보 표시 (최소화 버전) */
-        .user-info {
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            right: 70px;
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 12px;
-            color: #6b7280;
-            z-index: 10;
+        /* 상단 헤더바 (고정) */
+        .top-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            font-size: 14px;
         }
 
-        .connection-status-corner {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 10;
+        .user-info-header {
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .status-badge {
-            padding: 4px 8px;
+            padding: 4px 12px;
             border-radius: 12px;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
+        }
+
+        .logout-btn-header {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn-header:hover {
+            background: #dc2626;
+        }
+
+        /* 메인 컨텐츠 (상단 헤더 아래로) */
+        .main-content {
+            margin-top: 70px;
+            padding: 20px;
+            min-height: calc(100vh - 70px);
         }
 
         .status-connected {
@@ -318,10 +345,7 @@
             font-size: 14px;
             cursor: pointer;
             transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: #4b5563;
+            display: none; /* 헤더에 있으므로 숨김 */
         }
 
         /* 로딩 스피너 */
@@ -348,12 +372,28 @@
 
         /* 반응형 디자인 */
         @media (max-width: 768px) {
-            body {
-                padding: 5px;
+            .top-header {
+                padding: 8px 15px;
+                font-size: 12px;
+            }
+
+            .header-actions {
+                gap: 10px;
+            }
+
+            .logout-btn-header {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            .main-content {
+                margin-top: 60px;
+                padding: 15px;
             }
 
             .card {
                 padding: 20px;
+                margin: 10px;
                 border-radius: 16px;
             }
 
@@ -366,46 +406,28 @@
                 gap: 12px;
             }
 
-            .position-title {
-                font-size: 0.9rem;
-            }
-
             .selection-code {
                 font-size: 1.5rem;
                 letter-spacing: 4px;
             }
-
-            .confirmed-code {
-                font-size: 1.4rem;
-                letter-spacing: 4px;
-            }
-
-            .user-info {
-                flex-direction: column;
-                text-align: center;
-                gap: 8px;
-            }
-
-            .user-details {
-                justify-content: center;
-                gap: 10px;
-            }
         }
 
         @media (max-width: 480px) {
+            .top-header {
+                flex-direction: column;
+                gap: 8px;
+                padding: 8px;
+                font-size: 11px;
+            }
+
+            .main-content {
+                margin-top: 80px;
+                padding: 10px;
+            }
+
             .selection-grid {
                 grid-template-columns: 1fr;
                 gap: 10px;
-            }
-
-            .user-details {
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .btn {
-                padding: 12px 20px;
-                font-size: 16px;
             }
 
             .selection-code {
@@ -544,118 +566,124 @@
         <div class="card">
             <!-- 로그인 화면 -->
             <div id="loginScreen">
-                <div class="header">
-                    <h1>🎰 교육용 로또</h1>
-                    <p class="subtitle">사용자 로그인</p>
-                </div>
-
-                <div class="login-form">
-                    <div id="initialLogin">
-                        <div class="form-group">
-                            <label for="employeeId">사번</label>
-                            <input type="text" id="employeeId" class="form-input" placeholder="사번을 입력하세요" autocomplete="username">
-                        </div>
-                        <div class="form-group">
-                            <label for="userName">성명</label>
-                            <input type="text" id="userName" class="form-input" placeholder="성명을 입력하세요" autocomplete="name">
-                        </div>
-                        <div class="form-group">
-                            <label for="userPosition">직위</label>
-                            <input type="text" id="userPosition" class="form-input" placeholder="직위를 입력하세요" autocomplete="organization-title">
-                        </div>
-                        <button id="initialLoginBtn" class="btn btn-primary">
-                            🚀 로그인
-                        </button>
+                <div class="card">
+                    <div class="header">
+                        <h1>🎰 교육용 로또</h1>
+                        <p class="subtitle">사용자 로그인</p>
                     </div>
 
-                    <div id="quickLogin" style="display: none;">
-                        <div class="form-group">
-                            <label for="quickEmployeeId">사번</label>
-                            <input type="text" id="quickEmployeeId" class="form-input" placeholder="사번을 입력하세요" autocomplete="username">
+                    <div class="login-form">
+                        <div id="initialLogin">
+                            <div class="form-group">
+                                <label for="employeeId">사번</label>
+                                <input type="text" id="employeeId" class="form-input" placeholder="사번을 입력하세요" autocomplete="username">
+                            </div>
+                            <div class="form-group">
+                                <label for="userName">성명</label>
+                                <input type="text" id="userName" class="form-input" placeholder="성명을 입력하세요" autocomplete="name">
+                            </div>
+                            <div class="form-group">
+                                <label for="userPosition">직위</label>
+                                <input type="text" id="userPosition" class="form-input" placeholder="직위를 입력하세요" autocomplete="organization-title">
+                            </div>
+                            <button id="initialLoginBtn" class="btn btn-primary">
+                                🚀 로그인
+                            </button>
                         </div>
-                        <button id="quickLoginBtn" class="btn btn-primary">
-                            ⚡ 빠른 로그인
-                        </button>
-                        <br><br>
-                        <button id="newUserBtn" class="btn btn-secondary">
-                            👤 새 사용자로 로그인
-                        </button>
+
+                        <div id="quickLogin" style="display: none;">
+                            <div class="form-group">
+                                <label for="quickEmployeeId">사번</label>
+                                <input type="text" id="quickEmployeeId" class="form-input" placeholder="사번을 입력하세요" autocomplete="username">
+                            </div>
+                            <button id="quickLoginBtn" class="btn btn-primary">
+                                ⚡ 빠른 로그인
+                            </button>
+                            <br><br>
+                            <button id="newUserBtn" class="btn btn-secondary">
+                                👤 새 사용자로 로그인
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- 메인 화면 -->
             <div id="mainScreen" style="display: none;">
-                <!-- 사용자 정보 (최소화) -->
-                <div class="user-info" id="userInfo">
-                    <span id="displayUserName">홍길동</span> <span id="displayUserPosition">대리</span> (<span id="displayEmployeeId">12345</span>)
-                </div>
-
-                <!-- 연결 상태 (우상단) -->
-                <div class="connection-status-corner">
-                    <div id="connectionStatus" class="status-badge status-disconnected">
-                        <div class="loading"></div>
-                        연결 중...
+                <!-- 상단 고정 헤더 -->
+                <div class="top-header">
+                    <div class="user-info-header">
+                        <span id="displayUserName">정인혁</span> 
+                        <span id="displayUserPosition">책임</span>
+                        (<span id="displayEmployeeId">235589</span>)
+                    </div>
+                    <div class="header-actions">
+                        <div id="connectionStatus" class="status-badge status-disconnected">
+                            연결 중...
+                        </div>
+                        <button id="logoutBtn" class="logout-btn-header">🚪 로그아웃</button>
                     </div>
                 </div>
 
-                <div class="header">
-                    <h1>🎯 번호 선택</h1>
-                    <p class="subtitle">원하는 번호를 선택하세요</p>
-                </div>
+                <!-- 메인 컨텐츠 -->
+                <div class="main-content">
+                    <div class="card">
+                        <div class="header">
+                            <h1>🎯 번호 선택</h1>
+                            <p class="subtitle">원하는 번호를 선택하세요</p>
+                        </div>
 
-                <!-- 로딩 상태 -->
-                <div id="loadingState">
-                    <div class="loading"></div>
-                    <p class="loading-text">게임 설정을 불러오는 중...</p>
-                </div>
+                        <!-- 로딩 상태 -->
+                        <div id="loadingState">
+                            <div class="loading"></div>
+                            <p class="loading-text">게임 설정을 불러오는 중...</p>
+                        </div>
 
-                <!-- 추첨 진행 상태 -->
-                <div id="drawingState" style="display: none;">
-                    <div class="draw-status">
-                        🎰 추첨이 진행 중입니다... 잠시만 기다려주세요!
+                        <!-- 추첨 진행 상태 -->
+                        <div id="drawingState" style="display: none;">
+                            <div class="draw-status">
+                                🎰 추첨이 진행 중입니다... 잠시만 기다려주세요!
+                            </div>
+                        </div>
+
+                        <!-- 추첨 결과 알림 -->
+                        <div id="resultState" style="display: none;">
+                            <div class="result-notification" id="resultNotification">
+                                <!-- 결과가 여기에 표시됩니다 -->
+                            </div>
+                        </div>
+
+                        <!-- 번호 선택 화면 -->
+                        <div id="selectionState" style="display: none;">
+                            <!-- 선택한 번호 표시 -->
+                            <div class="selection-display">
+                                <div class="selection-title">선택한 번호</div>
+                                <div class="selection-code" id="selectionDisplay">? - ? - ? - ?</div>
+                            </div>
+
+                            <!-- 드롭다운 선택 그리드 -->
+                            <div class="selection-grid" id="selectionGrid">
+                                <!-- 동적으로 생성됩니다 -->
+                            </div>
+
+                            <button id="confirmBtn" class="btn btn-success" disabled>
+                                ✅ 선택 확정
+                            </button>
+                        </div>
+
+                        <!-- 확정 완료 상태 -->
+                        <div id="confirmedState" style="display: none;">
+                            <div class="selection-display">
+                                <div class="selection-title">✅ 확정된 번호</div>
+                                <div class="selection-code" id="confirmedDisplay">1 - A - 가 - ♠</div>
+                            </div>
+                            
+                            <div style="text-align: center; color: #6b7280; margin-top: 20px;">
+                                <p>추첨 결과를 기다려주세요! 🎯</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <!-- 추첨 결과 알림 -->
-                <div id="resultState" style="display: none;">
-                    <div class="result-notification" id="resultNotification">
-                        <!-- 결과가 여기에 표시됩니다 -->
-                    </div>
-                </div>
-
-                <!-- 번호 선택 화면 -->
-                <div id="selectionState" style="display: none;">
-                    <!-- 선택한 번호 표시 (상단으로 이동) -->
-                    <div class="selection-display">
-                        <div class="selection-title">선택한 번호</div>
-                        <div class="selection-code" id="selectionDisplay">? - ? - ? - ?</div>
-                    </div>
-
-                    <!-- 드롭다운 선택 그리드 -->
-                    <div class="selection-grid" id="selectionGrid">
-                        <!-- 동적으로 생성됩니다 -->
-                    </div>
-
-                    <button id="confirmBtn" class="btn btn-success" disabled>
-                        ✅ 선택 확정
-                    </button>
-                </div>
-
-                <!-- 확정 완료 상태 -->
-                <div id="confirmedState" style="display: none;">
-                    <div class="selection-display">
-                        <div class="selection-title">✅ 확정된 번호</div>
-                        <div class="selection-code" id="confirmedDisplay">1 - A - 가 - ♠</div>
-                    </div>
-                    
-                    <div style="text-align: center; color: #6b7280; margin-top: 20px;">
-                        <p>추첨 결과를 기다려주세요! 🎯</p>
-                    </div>
-                </div>
-
-                <!-- 로그아웃 버튼 -->
-                <button id="logoutBtn" class="logout-btn">🚪 로그아웃</button>
             </div>
         </div>
     </div>
