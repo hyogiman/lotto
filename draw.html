@@ -431,15 +431,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-database-compat.min.js"></script>
 
     <script>
-        // Firebase 설정
+        // Firebase 설정 (정확한 Realtime Database URL 적용)
         const firebaseConfig = {
-          apiKey: "AIzaSyDrqmIoWUU8woTQygNv6xaZAKrVW0QQP-s",
-          authDomain: "lottohyogi.firebaseapp.com",
-          projectId: "lottohyogi",
-          storageBucket: "lottohyogi.firebasestorage.app",
-          messagingSenderId: "888081310953",
-          appId: "1:888081310953:web:77ee3153201d427e84fc78",
-          measurementId: "G-DKWEY3D575"
+            apiKey: "AIzaSyDrqmIoWUU8woTQygNv6xaZAKrVW0QQP-s",
+            authDomain: "lottohyogi.firebaseapp.com",
+            databaseURL: "https://lottohyogi-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "lottohyogi",
+            storageBucket: "lottohyogi.firebasestorage.app",
+            messagingSenderId: "888081310953",
+            appId: "1:888081310953:web:77ee3153201d427e84fc78",
+            measurementId: "G-DKWEY3D575"
         };
 
         // Firebase 초기화
@@ -556,10 +557,7 @@
             return items.map(item => `<div class="slot-item">${item}</div>`).join('');
         }
 
-        // 결과 표시 업데이트
-        function updateResultDisplay() {
-            resultCode.textContent = currentWinningCode.join(' - ');
-        }
+        // 결과 표시 업데이트 함수 제거 (더 이상 필요없음)
 
         // 추첨 시작 (관리자 트리거)
         function startDraw() {
