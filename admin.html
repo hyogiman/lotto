@@ -957,12 +957,23 @@
                 renderUsersTable();
             });
 
-            // 히스토리 데이터 실시간 감지
+            // 히스토리 데이터 실시간 감지 (배열/객체 처리 개선)
             database.ref('drawHistory').on('value', (snapshot) => {
-                if (snapshot.val()) {
-                    drawHistory = Object.values(snapshot.val());
-                    renderHistoryTable();
+                const historyData = snapshot.val();
+                if (historyData) {
+                    // Firebase에서 객체로 저장된 경우 배열로 변환
+                    if (Array.isArray(historyData)) {
+                        drawHistory = historyData.filter(item => item); // null 값 제거
+                    } else if (typeof historyData === 'object') {
+                        drawHistory = Object.values(historyData).filter(item => item);
+                    } else {
+                        drawHistory = [];
+                    }
+                } else {
+                    drawHistory = [];
                 }
+                console.log('히스토리 데이터 로드됨:', drawHistory);
+                renderHistoryTable();
             });
         }
 
@@ -1100,28 +1111,45 @@
             userTab.innerHTML = `👥 사용자 관리 (${userCount}명)`;
         }
 
-        // 히스토리 테이블 렌더링
+        // 히스토리 테이블 렌더링 (안전성 개선)
         function renderHistoryTable() {
             const tbody = historyTableBody;
             
-            if (drawHistory.length === 0) {
+            // drawHistory가 배열이 아니거나 비어있는 경우 처리
+            if (!drawHistory || !Array.isArray(drawHistory) || drawHistory.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="empty-state">아직 추첨 이력이 없습니다</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = drawHistory.map((draw, index) => `
-                <tr>
-                    <td><strong>${drawHistory.length - index}회</strong></td>
-                    <td>${new Date(draw.timestamp).toLocaleString('ko-KR')}</td>
-                    <td><span class="history-code">${draw.winningCode.join(' - ')}</span></td>
-                    <td>
-                        ${draw.winners.length > 0 
-                            ? draw.winners.map(winner => `<span class="winner-badge">${winner}</span>`).join(' ')
-                            : '<span class="no-winner">당첨자 없음</span>'
-                        }
-                    </td>
-                </tr>
-            `).reverse().join('');
+            try {
+                tbody.innerHTML = drawHistory.map((draw, index) => {
+                    // 각 draw 객체가 유효한지 확인
+                    if (!draw || !draw.winningCode || !Array.isArray(draw.winningCode)) {
+                        return ''; // 유효하지 않은 데이터는 건너뛰기
+                    }
+
+                    const winners = draw.winners || [];
+                    const roundNumber = drawHistory.length - index;
+
+                    return `
+                        <tr>
+                            <td><strong>${roundNumber}회</strong></td>
+                            <td>${draw.timestamp ? new Date(draw.timestamp).toLocaleString('ko-KR') : '시간 정보 없음'}</td>
+                            <td><span class="history-code">${draw.winningCode.join(' - ')}</span></td>
+                            <td>
+                                ${winners.length > 0 
+                                    ? winners.map(winner => `<span class="winner-badge">${winner}</span>`).join(' ')
+                                    : '<span class="no-winner">당첨자 없음</span>'
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }).filter(row => row !== '').reverse().join(''); // 빈 행 제거 후 역순 정렬
+
+            } catch (error) {
+                console.error('히스토리 테이블 렌더링 오류:', error);
+                tbody.innerHTML = '<tr><td colspan="4" class="empty-state">히스토리 데이터를 불러오는 중 오류가 발생했습니다</td></tr>';
+            }
         }
 
         // 새 사용자 추가 (수정된 버전)
@@ -1226,22 +1254,23 @@
             renderManualSelectors();
         }
 
-        // 모든 데이터 저장
+        // 모든 데이터 저장 (히스토리 저장 방식 개선)
         function saveAllData() {
             const allData = {
                 gameSettings: gameSettings,
                 users: users,
-                drawHistory: drawHistory
+                drawHistory: drawHistory // 배열 형태로 저장
             };
 
             if (database) {
-                database.ref().set(allData)
+                database.ref().update(allData) // set 대신 update 사용
                     .then(() => {
+                        console.log('데이터 저장 완료');
                         showSaveIndicator();
                     })
                     .catch(error => {
                         console.error('저장 오류:', error);
-                        alert('데이터 저장에 실패했습니다.');
+                        alert('데이터 저장에 실패했습니다: ' + error.message);
                     });
             } else {
                 // 오프라인 모드
