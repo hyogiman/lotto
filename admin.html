@@ -642,25 +642,21 @@
 
                 <!-- 사용자 관리 탭 -->
                 <div class="tab-pane" id="users">
-                    <h3 style="margin-bottom: 25px; color: #1f2937; font-size: 1.5rem;">새 사용자 등록</h3>
-                    
-                    <div class="add-user-form">
-                        <div class="form-group">
-                            <label for="newEmployeeId">사번</label>
-                            <input type="text" id="newEmployeeId" class="add-user-input" placeholder="사번 입력">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                        <h3 style="color: #1f2937; font-size: 1.5rem;">등록된 사용자</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="unlockAllUsers" class="btn btn-warning">🔓 전체 확정 해제</button>
+                            <button id="clearAllUsers" class="btn btn-danger">🗑️ 전체 삭제</button>
                         </div>
-                        <div class="form-group">
-                            <label for="newUserName">성명</label>
-                            <input type="text" id="newUserName" class="add-user-input" placeholder="성명 입력">
-                        </div>
-                        <div class="form-group">
-                            <label for="newUserPosition">직위</label>
-                            <input type="text" id="newUserPosition" class="add-user-input" placeholder="직위 입력">
-                        </div>
-                        <button id="addUserBtn" class="btn btn-success">➕ 추가</button>
                     </div>
 
-                    <div style="max-height: 400px; overflow-y: auto;">
+                    <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <p style="color: #0c4a6e; margin: 0;">
+                            <strong>💡 안내:</strong> 사용자는 User 페이지에서 직접 로그인하여 등록됩니다. 여기서는 등록된 사용자들의 번호 선택을 관리할 수 있습니다.
+                        </p>
+                    </div>
+
+                    <div style="max-height: 500px; overflow-y: auto;">
                         <table class="users-table">
                             <thead>
                                 <tr>
@@ -671,14 +667,10 @@
                             </thead>
                             <tbody id="usersTableBody">
                                 <tr>
-                                    <td colspan="3" class="empty-state">등록된 사용자가 없습니다</td>
+                                    <td colspan="3" class="empty-state">등록된 사용자가 없습니다<br><small>User 페이지에서 로그인하여 참여할 수 있습니다</small></td>
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-
-                    <div style="margin-top: 20px; text-align: center;">
-                        <button id="clearAllUsers" class="btn btn-danger">🗑️ 모든 사용자 삭제</button>
                     </div>
                 </div>
 
@@ -1097,9 +1089,9 @@
                         </td>
                         <td>
                             <div class="user-controls">
-                                <button class="btn btn-warning btn-small" onclick="randomizeUserSelection('${userId}')" ${isConfirmed ? 'disabled' : ''}>🎲</button>
-                                <button class="btn btn-success btn-small" onclick="unlockUserSelection('${userId}')" ${isConfirmed ? '' : 'disabled'}>🔓</button>
-                                <button class="btn btn-danger btn-small" onclick="removeUser('${userId}')">🗑️</button>
+                                <button class="btn btn-warning btn-small" onclick="randomizeUserSelection('${userId}')" ${isConfirmed ? 'disabled' : ''}>🎲 랜덤</button>
+                                <button class="btn btn-success btn-small" onclick="unlockUserSelection('${userId}')" ${isConfirmed ? '' : 'disabled'}>🔓 해제</button>
+                                <button class="btn btn-danger btn-small" onclick="removeUser('${userId}')">🗑️ 삭제</button>
                             </div>
                         </td>
                     </tr>
@@ -1152,42 +1144,27 @@
             }
         }
 
-        // 새 사용자 추가 (수정된 버전)
-        function addUser() {
-            const employeeId = document.getElementById('newEmployeeId').value.trim();
-            const name = document.getElementById('newUserName').value.trim();
-            const position = document.getElementById('newUserPosition').value.trim();
+        // 전체 사용자 확정 해제
+        function unlockAllUsers() {
+            const confirmedUsers = Object.entries(users).filter(([_, userData]) => 
+                !userData.selection.includes('?')
+            );
 
-            if (!employeeId || !name || !position) {
-                alert('모든 정보를 입력하세요.');
+            if (confirmedUsers.length === 0) {
+                alert('확정된 사용자가 없습니다.');
                 return;
             }
 
-            if (Object.values(users).some(user => user.employeeId === employeeId)) {
-                alert('이미 존재하는 사번입니다.');
-                return;
+            if (confirm(`${confirmedUsers.length}명의 확정된 사용자를 모두 선택 해제하시겠습니까?`)) {
+                Object.keys(users).forEach(userId => {
+                    if (!users[userId].selection.includes('?')) {
+                        users[userId].selection = ['?', '?', '?', '?'];
+                    }
+                });
+                renderUsersTable();
+                saveAllData();
+                alert('전체 사용자의 선택이 해제되었습니다.');
             }
-
-            if (Object.values(users).some(user => user.name === name)) {
-                alert('이미 존재하는 사용자 이름입니다.');
-                return;
-            }
-
-            const userId = 'user_' + employeeId;
-            users[userId] = {
-                employeeId: employeeId,
-                name: name,
-                position: position,
-                selection: ['?', '?', '?', '?'],
-                timestamp: Date.now()
-            };
-
-            document.getElementById('newEmployeeId').value = '';
-            document.getElementById('newUserName').value = '';
-            document.getElementById('newUserPosition').value = '';
-            
-            renderUsersTable();
-            saveAllData();
         }
 
         // 사용자 선택 번호 업데이트
@@ -1308,25 +1285,11 @@
             document.getElementById('saveSettings').addEventListener('click', () => saveAllData());
 
             // 사용자 관리 버튼들
-            document.getElementById('addUserBtn').addEventListener('click', addUser);
+            document.getElementById('unlockAllUsers').addEventListener('click', unlockAllUsers);
             document.getElementById('clearAllUsers').addEventListener('click', clearAllUsers);
 
             // 히스토리 관리 버튼
             document.getElementById('clearHistory').addEventListener('click', clearHistory);
-
-            // 엔터키 처리 (사용자 등록)
-            ['newEmployeeId', 'newUserName', 'newUserPosition'].forEach((id, index, array) => {
-                document.getElementById(id).addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        if (index < array.length - 1) {
-                            document.getElementById(array[index + 1]).focus();
-                        } else {
-                            addUser();
-                        }
-                    }
-                });
-            });
-        }
 
         // 전역 함수들 (HTML에서 직접 호출되는 함수들)
         window.updateUserSelection = updateUserSelection;
