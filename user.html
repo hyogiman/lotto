@@ -146,43 +146,32 @@
             background: #4b5563;
         }
 
-        /* 사용자 정보 표시 (컴팩트 버전) */
+        /* 사용자 정보 표시 (최소화 버전) */
         .user-info {
-            background: #f0f9ff;
-            border: 1px solid #0ea5e9;
-            border-radius: 12px;
-            padding: 12px 16px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            font-size: 14px;
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            right: 70px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #6b7280;
+            z-index: 10;
         }
 
-        .user-details {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .user-details .user-name {
-            font-weight: bold;
-            color: #0c4a6e;
-            font-size: 16px;
-        }
-
-        .user-details .user-meta {
-            color: #0369a1;
-            font-size: 13px;
+        .connection-status-corner {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
         }
 
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
             white-space: nowrap;
         }
@@ -272,33 +261,67 @@
             letter-spacing: 6px;
         }
 
-        /* 확정 상태 */
-        .confirmed-state {
-            background: #dcfce7;
-            border: 2px solid #10b981;
-            border-radius: 20px;
-            padding: 30px;
-            margin-bottom: 30px;
-        }
-
-        .confirmed-state h3 {
-            color: #166534;
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-        }
-
-        .confirmed-code {
-            color: #166534;
-            font-size: 2.2rem;
-            font-weight: bold;
-            margin: 15px 0;
-            letter-spacing: 6px;
-        }
-
-        .confirmed-message {
-            color: #059669;
+        /* 추첨 상태 및 결과 알림 */
+        .draw-status {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
             font-size: 1.1rem;
-            margin-top: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .result-notification {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            font-weight: 600;
+            font-size: 1.3rem;
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        .result-notification.winner {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            animation: celebration 1s ease-in-out infinite alternate;
+        }
+
+        .result-notification.loser {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        @keyframes celebration {
+            from { transform: scale(1); }
+            to { transform: scale(1.02); }
+        }
+
+        .logout-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #4b5563;
         }
 
         /* 로딩 스피너 */
@@ -563,31 +586,42 @@
 
             <!-- 메인 화면 -->
             <div id="mainScreen" style="display: none;">
+                <!-- 사용자 정보 (최소화) -->
+                <div class="user-info" id="userInfo">
+                    <span id="displayUserName">홍길동</span> <span id="displayUserPosition">대리</span> (<span id="displayEmployeeId">12345</span>)
+                </div>
+
+                <!-- 연결 상태 (우상단) -->
+                <div class="connection-status-corner">
+                    <div id="connectionStatus" class="status-badge status-disconnected">
+                        <div class="loading"></div>
+                        연결 중...
+                    </div>
+                </div>
+
                 <div class="header">
                     <h1>🎯 번호 선택</h1>
                     <p class="subtitle">원하는 번호를 선택하세요</p>
-                </div>
-
-                <!-- 사용자 정보 및 상태 (컴팩트 버전) -->
-                <div class="user-info">
-                    <div class="user-details">
-                        <span class="user-name" id="displayUserName">홍길동</span>
-                        <span class="user-meta">사번: <span id="displayEmployeeId">12345</span></span>
-                        <span class="user-meta"><span id="displayUserPosition">대리</span></span>
-                    </div>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <div id="connectionStatus" class="status-badge status-disconnected">
-                            <div class="loading"></div>
-                            연결 중...
-                        </div>
-                        <button id="logoutBtn" class="btn btn-danger btn-small">🚪</button>
-                    </div>
                 </div>
 
                 <!-- 로딩 상태 -->
                 <div id="loadingState">
                     <div class="loading"></div>
                     <p class="loading-text">게임 설정을 불러오는 중...</p>
+                </div>
+
+                <!-- 추첨 진행 상태 -->
+                <div id="drawingState" style="display: none;">
+                    <div class="draw-status">
+                        🎰 추첨이 진행 중입니다... 잠시만 기다려주세요!
+                    </div>
+                </div>
+
+                <!-- 추첨 결과 알림 -->
+                <div id="resultState" style="display: none;">
+                    <div class="result-notification" id="resultNotification">
+                        <!-- 결과가 여기에 표시됩니다 -->
+                    </div>
                 </div>
 
                 <!-- 번호 선택 화면 -->
@@ -610,20 +644,18 @@
 
                 <!-- 확정 완료 상태 -->
                 <div id="confirmedState" style="display: none;">
-                    <div class="confirmed-state">
-                        <h3>✅ 선택이 확정되었습니다!</h3>
-                        <div class="confirmed-code" id="confirmedDisplay">1 - A - 가 - ♠</div>
-                        <p class="confirmed-message">추첨 결과를 기다려주세요!</p>
+                    <div class="selection-display">
+                        <div class="selection-title">✅ 확정된 번호</div>
+                        <div class="selection-code" id="confirmedDisplay">1 - A - 가 - ♠</div>
                     </div>
-
-                    <button id="changeSelectionBtn" class="btn btn-secondary" disabled>
-                        🔒 번호 변경 불가
-                    </button>
-                    <br><br>
-                    <p style="color: #6b7280; font-size: 14px;">
-                        관리자만 번호 변경이 가능합니다
-                    </p>
+                    
+                    <div style="text-align: center; color: #6b7280; margin-top: 20px;">
+                        <p>추첨 결과를 기다려주세요! 🎯</p>
+                    </div>
                 </div>
+
+                <!-- 로그아웃 버튼 -->
+                <button id="logoutBtn" class="logout-btn">🚪 로그아웃</button>
             </div>
         </div>
     </div>
@@ -681,10 +713,13 @@
         const loadingState = document.getElementById('loadingState');
         const selectionState = document.getElementById('selectionState');
         const confirmedState = document.getElementById('confirmedState');
+        const drawingState = document.getElementById('drawingState');
+        const resultState = document.getElementById('resultState');
         const selectionGrid = document.getElementById('selectionGrid');
         const selectionDisplay = document.getElementById('selectionDisplay');
         const confirmedDisplay = document.getElementById('confirmedDisplay');
         const confirmBtn = document.getElementById('confirmBtn');
+        const resultNotification = document.getElementById('resultNotification');
 
         // 페이지 초기화
         function initializePage() {
@@ -773,6 +808,8 @@
             loadingState.style.display = 'block';
             selectionState.style.display = 'none';
             confirmedState.style.display = 'none';
+            drawingState.style.display = 'none';
+            resultState.style.display = 'none';
 
             if (database) {
                 database.ref().once('value', (snapshot) => {
@@ -780,6 +817,9 @@
                     if (data) {
                         gameSettings = data.gameSettings;
                         checkUserStatus(data.users);
+                        
+                        // 추첨 상태 실시간 감지
+                        setupDrawStateListener();
                     } else {
                         loadOfflineData();
                     }
@@ -789,6 +829,72 @@
                 });
             } else {
                 loadOfflineData();
+            }
+        }
+
+        // 추첨 상태 리스너 설정
+        function setupDrawStateListener() {
+            if (!database) return;
+
+            database.ref('drawState').on('value', (snapshot) => {
+                const drawState = snapshot.val();
+                if (drawState) {
+                    if (drawState.isActive && drawState.started) {
+                        // 추첨 진행 중
+                        showDrawingState();
+                    } else if (drawState.completed) {
+                        // 추첨 완료 - 결과 확인
+                        checkDrawResult(drawState.winningCode || gameSettings.winningCode);
+                    }
+                }
+            });
+        }
+
+        // 추첨 진행 상태 표시
+        function showDrawingState() {
+            loadingState.style.display = 'none';
+            selectionState.style.display = 'none';
+            confirmedState.style.display = 'none';
+            resultState.style.display = 'none';
+            drawingState.style.display = 'block';
+        }
+
+        // 추첨 결과 확인
+        function checkDrawResult(winningCode) {
+            if (!isSelectionConfirmed || !winningCode) return;
+
+            const isWinner = userSelection.every((selection, index) => 
+                selection !== '?' && selection === winningCode[index]
+            );
+
+            showResultState(isWinner, winningCode);
+        }
+
+        // 결과 상태 표시
+        function showResultState(isWinner, winningCode) {
+            loadingState.style.display = 'none';
+            selectionState.style.display = 'none';
+            confirmedState.style.display = 'none';
+            drawingState.style.display = 'none';
+            resultState.style.display = 'block';
+
+            const winningCodeText = winningCode.join(' - ');
+
+            if (isWinner) {
+                resultNotification.className = 'result-notification winner';
+                resultNotification.innerHTML = `
+                    <div style="font-size: 2rem; margin-bottom: 15px;">🎉 축하합니다! 🎉</div>
+                    <div style="margin-bottom: 10px;">당첨되셨습니다!</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; letter-spacing: 4px;">${winningCodeText}</div>
+                `;
+            } else {
+                resultNotification.className = 'result-notification loser';
+                resultNotification.innerHTML = `
+                    <div style="font-size: 1.5rem; margin-bottom: 15px;">😢 아쉽게도...</div>
+                    <div style="margin-bottom: 10px;">당첨되지 않았습니다</div>
+                    <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 3px;">당첨번호: ${winningCodeText}</div>
+                    <div style="font-size: 1rem; margin-top: 10px;">선택번호: ${userSelection.join(' - ')}</div>
+                `;
             }
         }
 
@@ -836,15 +942,21 @@
         function showSelectionState() {
             renderSelectionGrid();
             updateSelectionDisplay();
+            loadingState.style.display = 'none';
             selectionState.style.display = 'block';
             confirmedState.style.display = 'none';
+            drawingState.style.display = 'none';
+            resultState.style.display = 'none';
         }
 
         // 확정 화면 표시
         function showConfirmedState() {
             confirmedDisplay.textContent = userSelection.join(' - ');
+            loadingState.style.display = 'none';
             selectionState.style.display = 'none';
             confirmedState.style.display = 'block';
+            drawingState.style.display = 'none';
+            resultState.style.display = 'none';
         }
 
         // 선택 그리드 렌더링 (드롭다운 방식)
