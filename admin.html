@@ -909,7 +909,7 @@
             }
         }
 
-        // 모든 데이터 로드
+        // 모든 데이터 로드 및 실시간 감지
         function loadAllData() {
             if (!database) {
                 // 오프라인 모드
@@ -925,15 +925,29 @@
                 return;
             }
 
-            // Firebase에서 로드
-            database.ref().once('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    if (data.gameSettings) gameSettings = data.gameSettings;
-                    if (data.users) users = data.users;
-                    if (data.drawHistory) drawHistory = data.drawHistory;
+            // Firebase에서 실시간 데이터 감지
+            database.ref('gameSettings').on('value', (snapshot) => {
+                if (snapshot.val()) {
+                    gameSettings = snapshot.val();
+                    renderPositionInputs();
+                    renderManualSelectors();
+                    updateWinningCodeDisplay();
+                    updateModeSelection();
                 }
-                updateAllDisplays();
+            });
+
+            // 사용자 데이터 실시간 감지
+            database.ref('users').on('value', (snapshot) => {
+                users = snapshot.val() || {};
+                renderUsersTable();
+            });
+
+            // 히스토리 데이터 실시간 감지
+            database.ref('drawHistory').on('value', (snapshot) => {
+                if (snapshot.val()) {
+                    drawHistory = Object.values(snapshot.val());
+                    renderHistoryTable();
+                }
             });
         }
 
@@ -1020,27 +1034,33 @@
             document.getElementById('generateBtn').style.display = gameSettings.isAutoMode ? 'block' : 'none';
         }
 
-        // 사용자 테이블 렌더링
+        // 사용자 테이블 렌더링 (실시간 알림 추가)
         function renderUsersTable() {
             const tbody = usersTableBody;
+            const userCount = Object.keys(users).length;
             
-            if (Object.keys(users).length === 0) {
+            if (userCount === 0) {
                 tbody.innerHTML = '<tr><td colspan="3" class="empty-state">등록된 사용자가 없습니다</td></tr>';
                 return;
             }
 
             tbody.innerHTML = Object.entries(users).map(([userId, userData]) => {
                 const selection = userData.selection || ['?', '?', '?', '?'];
+                const isConfirmed = !selection.includes('?');
+                
                 return `
-                    <tr>
+                    <tr ${isConfirmed ? 'style="background-color: #f0fdf4;"' : ''}>
                         <td>
                             <div class="user-info-display">${userData.name} ${userData.position}</div>
-                            <div class="user-details">사번: ${userData.employeeId}</div>
+                            <div class="user-details">
+                                사번: ${userData.employeeId}
+                                ${isConfirmed ? '<span style="color: #059669; font-weight: bold; margin-left: 8px;">✅ 확정됨</span>' : '<span style="color: #dc2626; margin-left: 8px;">⏳ 선택 중</span>'}
+                            </div>
                         </td>
                         <td>
                             <div class="user-selection">
                                 ${selection.map((num, idx) => `
-                                    <select class="user-number" onchange="updateUserSelection('${userId}', ${idx}, this.value)" ${selection.includes('?') ? '' : 'disabled'}>
+                                    <select class="user-number" onchange="updateUserSelection('${userId}', ${idx}, this.value)" ${isConfirmed ? 'disabled' : ''}>
                                         <option value="?">${num === '?' ? '?' : num}</option>
                                         ${gameSettings.positions[idx].map(option => 
                                             `<option value="${option}" ${num === option ? 'selected' : ''}>${option}</option>`
@@ -1051,14 +1071,18 @@
                         </td>
                         <td>
                             <div class="user-controls">
-                                <button class="btn btn-warning btn-small" onclick="randomizeUserSelection('${userId}')" ${selection.includes('?') ? '' : 'disabled'}>🎲</button>
-                                <button class="btn btn-success btn-small" onclick="unlockUserSelection('${userId}')" ${selection.includes('?') ? 'disabled' : ''}>🔓</button>
+                                <button class="btn btn-warning btn-small" onclick="randomizeUserSelection('${userId}')" ${isConfirmed ? 'disabled' : ''}>🎲</button>
+                                <button class="btn btn-success btn-small" onclick="unlockUserSelection('${userId}')" ${isConfirmed ? '' : 'disabled'}>🔓</button>
                                 <button class="btn btn-danger btn-small" onclick="removeUser('${userId}')">🗑️</button>
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+
+            // 사용자 수 업데이트 표시
+            const userTab = document.querySelector('[data-tab="users"]');
+            userTab.innerHTML = `👥 사용자 관리 (${userCount}명)`;
         }
 
         // 히스토리 테이블 렌더링
