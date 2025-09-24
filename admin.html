@@ -819,30 +819,42 @@
                 return;
             }
 
+            console.log('추첨 시작 버튼 클릭됨');
             isDrawing = true;
             document.getElementById('startDrawBtn').disabled = true;
             document.getElementById('resetDrawBtn').disabled = false;
-            drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
-
-            // Firebase에 추첨 시작 신호 전송
-            if (database) {
-                database.ref('drawState').set({
-                    isActive: true,
-                    started: true,
-                    timestamp: Date.now()
-                });
-            }
+            drawStatusDisplay.textContent = '추첨 신호 전송 중... draw.html을 확인하세요!';
 
             // 자동 모드면 새 당첨 번호 생성
             if (gameSettings.isAutoMode) {
                 generateWinningCode();
-                saveAllData();
             }
 
-            // 추첨 완료 감지 (Firebase에서)
+            // Firebase에 추첨 시작 신호 전송
             if (database) {
+                const drawData = {
+                    isActive: true,
+                    started: true,
+                    timestamp: Date.now(),
+                    winningCode: gameSettings.winningCode
+                };
+                
+                console.log('Firebase에 추첨 데이터 전송:', drawData);
+                
+                database.ref('drawState').set(drawData)
+                    .then(() => {
+                        console.log('추첨 시작 신호 전송 완료!');
+                        drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
+                    })
+                    .catch(error => {
+                        console.error('추첨 시작 신호 전송 실패:', error);
+                        alert('추첨 시작에 실패했습니다.');
+                    });
+
+                // 추첨 완료 감지
                 database.ref('drawState/completed').on('value', (snapshot) => {
                     if (snapshot.val() === true && isDrawing) {
+                        console.log('추첨 완료 신호 받음');
                         finishDraw();
                     }
                 });
@@ -850,6 +862,9 @@
                 // 오프라인 모드에서는 12초 후 자동 완료
                 setTimeout(finishDraw, 12000);
             }
+
+            // 게임 설정도 최신으로 저장
+            saveAllData();
         }
 
         function finishDraw() {
