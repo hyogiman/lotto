@@ -958,7 +958,7 @@
             });
         }
 
-        // 참여자 정보 업데이트 (더 자세한 정보 표시)
+        // 참여자 정보 업데이트 (더 자세한 정보 표시 + 디버깅)
         function updateParticipantInfo() {
             const totalUsers = Object.keys(users).length;
             const confirmedUsers = Object.entries(users).filter(([_, userData]) => 
@@ -986,6 +986,25 @@
             }
             
             document.getElementById('participantInfo').innerHTML = infoHtml;
+
+            // 참여자 추첨 버튼 활성화/비활성화
+            const participantBtn = document.getElementById('participantDrawBtn');
+            if (participantBtn) {
+                const shouldDisable = confirmedUsers === 0 || isDrawing;
+                participantBtn.disabled = shouldDisable;
+                
+                if (confirmedUsers === 0) {
+                    participantBtn.title = '번호를 확정한 참여자가 없습니다';
+                } else {
+                    participantBtn.title = `${confirmedUsers}명의 참여자 중에서 추첨`;
+                }
+
+                console.log('참여자 추첨 버튼 상태 업데이트:', {
+                    확정사용자수: confirmedUsers,
+                    추첨진행중: isDrawing,
+                    버튼비활성화: shouldDisable
+                });
+            }
         }
 
         // 이전 당첨자 목록 가져오기
