@@ -1389,7 +1389,7 @@
             }
         }
 
-        // 이벤트 리스너 설정 (간단하게 복원)
+        // 이벤트 리스너 설정 (null 체크 추가)
         function setupEventListeners() {
             // 로그인 버튼들
             document.getElementById('initialLoginBtn').addEventListener('click', performInitialLogin);
@@ -1399,10 +1399,24 @@
                 location.reload();
             });
 
-            // 메인 화면 버튼들
-            document.getElementById('confirmBtn').addEventListener('click', confirmSelection);
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('backToWaitingBtn').addEventListener('click', backToWaitingState);
+            // 메인 화면 버튼들 (존재 확인 후 추가)
+            const confirmBtn = document.getElementById('confirmBtn');
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', confirmSelection);
+            }
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', logout);
+            }
+
+            const backBtn = document.getElementById('backToWaitingBtn');
+            if (backBtn) {
+                backBtn.addEventListener('click', backToWaitingState);
+                console.log('✅ backToWaitingBtn 이벤트 리스너 추가됨');
+            } else {
+                console.log('⚠️ backToWaitingBtn 요소가 아직 없음 (정상)');
+            }
 
             // 엔터키 처리
             document.getElementById('employeeId').addEventListener('keypress', (e) => {
