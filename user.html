@@ -748,6 +748,7 @@
         const confirmedDisplay = document.getElementById('confirmedDisplay');
         const confirmBtn = document.getElementById('confirmBtn');
         const resultNotification = document.getElementById('resultNotification');
+        const backToWaitingBtn = document.getElementById('backToWaitingBtn');
 
         // 페이지 초기화 및 백그라운드 동기화 설정
         function initializePage() {
@@ -1102,7 +1103,7 @@
             showResultState(isWinner, winningCode);
         }
 
-        // 결과 상태 표시
+        // 결과 상태 표시 (대기 버튼 포함)
         function showResultState(isWinner, winningCode) {
             loadingState.style.display = 'none';
             selectionState.style.display = 'none';
@@ -1118,6 +1119,7 @@
                     <div style="font-size: 2rem; margin-bottom: 15px;">🎉 축하합니다! 🎉</div>
                     <div style="margin-bottom: 10px;">당첨되셨습니다!</div>
                     <div style="font-size: 1.5rem; font-weight: bold; letter-spacing: 4px;">${winningCodeText}</div>
+                    <div style="margin-top: 15px; font-size: 1rem;">다음 추첨을 기다리시거나 관리자에게 문의하세요!</div>
                 `;
             } else {
                 resultNotification.className = 'result-notification loser';
@@ -1126,8 +1128,47 @@
                     <div style="margin-bottom: 10px;">당첨되지 않았습니다</div>
                     <div style="font-size: 1.2rem; font-weight: bold; letter-spacing: 3px;">당첨번호: ${winningCodeText}</div>
                     <div style="font-size: 1rem; margin-top: 10px;">선택번호: ${userSelection.join(' - ')}</div>
+                    <div style="margin-top: 15px; font-size: 0.9rem; color: rgba(255,255,255,0.8);">
+                        늦게 참여하셨나요? 다음 추첨을 기다려주세요!
+                    </div>
                 `;
             }
+        }
+
+        // 추첨 대기 상태로 돌아가기
+        function backToWaitingState() {
+            console.log('사용자가 추첨 대기 상태로 복귀 요청');
+            
+            // 확정된 번호는 유지하면서 대기 상태로 전환
+            loadingState.style.display = 'none';
+            selectionState.style.display = 'none';
+            drawingState.style.display = 'none';
+            resultState.style.display = 'none';
+            confirmedState.style.display = 'block';
+
+            // 확정 상태 업데이트 (대기 메시지 변경)
+            const waitingMessages = [
+                '다음 추첨을 기다리고 있습니다! 🎯',
+                '관리자가 새로운 추첨을 시작하기를 기다리는 중... ⏳',
+                '준비 완료! 언제든지 추첨 가능합니다! 🚀',
+                '번호 확정 완료. 추첨 시작을 기다려주세요! 💫'
+            ];
+            
+            const randomMessage = waitingMessages[Math.floor(Math.random() * waitingMessages.length)];
+            
+            confirmedState.innerHTML = `
+                <div class="selection-display">
+                    <div class="selection-title">✅ 확정된 번호</div>
+                    <div class="selection-code">${userSelection.join(' - ')}</div>
+                </div>
+                
+                <div style="text-align: center; color: #6b7280; margin-top: 20px;">
+                    <p>${randomMessage}</p>
+                    <div style="margin-top: 15px; padding: 10px; background: #f0f9ff; border-radius: 8px; font-size: 14px; color: #0369a1;">
+                        <strong>💡 안내:</strong> 현재 번호가 확정된 상태입니다. 새로운 추첨이 시작되면 자동으로 참여됩니다.
+                    </div>
+                </div>
+            `;
         }
 
         // 오프라인 데이터 로드
@@ -1324,6 +1365,7 @@
             // 메인 화면 버튼들
             document.getElementById('confirmBtn').addEventListener('click', confirmSelection);
             document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('backToWaitingBtn').addEventListener('click', backToWaitingState);
 
             // 엔터키 처리
             document.getElementById('employeeId').addEventListener('keypress', (e) => {
