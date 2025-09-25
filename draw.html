@@ -474,10 +474,55 @@
         const adminMessage = document.getElementById('adminMessage');
         const particles = document.getElementById('particles');
 
-        // 페이지 초기화
+        // 페이지 초기화 및 백그라운드 작업 설정
         function initializePage() {
             loadGameSettings();
             setupEventListeners();
+            setupBackgroundSync();
+        }
+
+        // 백그라운드 동기화 및 자동 실행 설정
+        function setupBackgroundSync() {
+            // 페이지 가시성 감지
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    console.log('Draw 페이지 복귀 - 상태 확인');
+                    checkCurrentDrawState();
+                }
+            });
+
+            // 윈도우 포커스 감지  
+            window.addEventListener('focus', () => {
+                console.log('Draw 페이지 포커스 - 상태 확인');
+                setTimeout(checkCurrentDrawState, 200);
+            });
+        }
+
+        // 현재 추첨 상태 확인 및 자동 실행
+        function checkCurrentDrawState() {
+            if (!database) return;
+
+            database.ref('drawState').once('value', (snapshot) => {
+                const drawState = snapshot.val();
+                console.log('Draw 페이지 상태 확인:', drawState);
+                
+                if (drawState && drawState.isActive && drawState.started && !isDrawing) {
+                    console.log('백그라운드에서 추첨 시작 신호 감지 - 자동 실행!');
+                    
+                    // 최신 게임 설정도 함께 로드
+                    if (drawState.gameSettings) {
+                        gameSettings = drawState.gameSettings;
+                        currentWinningCode = drawState.winningCode || gameSettings.winningCode;
+                        initializeSlots();
+                    }
+                    
+                    // 추첨 자동 시작
+                    drawStatus.textContent = '백그라운드에서 추첨 신호를 받았습니다!';
+                    setTimeout(() => {
+                        startDraw();
+                    }, 1000);
+                }
+            });
         }
 
         // 게임 설정 로드 및 추첨 상태 감지
