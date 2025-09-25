@@ -906,7 +906,7 @@
             }
         }
 
-        // 메인 화면으로 전환
+        // 메인 화면으로 전환 (사용자 등록 추가)
         function loginToMain() {
             // 사용자 정보 표시
             document.getElementById('displayUserName').textContent = currentUser.name;
@@ -919,6 +919,16 @@
 
             // 사용자 ID 생성 (사번 기반)
             userId = 'user_' + currentUser.employeeId;
+
+            console.log('로그인 완료:', {
+                이름: currentUser.name,
+                사번: currentUser.employeeId,
+                직위: currentUser.position,
+                userId: userId
+            });
+
+            // Firebase에 사용자 등록 (Admin에서 바로 보이도록)
+            registerUserToFirebase();
 
             // 게임 데이터 로드
             loadGameData();
@@ -1298,28 +1308,55 @@
             }
         }
 
-        // 사용자 선택 저장
+        // 사용자 선택 저장 (개선된 버전)
         function saveUserSelection() {
             const userData = {
                 name: currentUser.name,
                 employeeId: currentUser.employeeId,
                 position: currentUser.position,
                 selection: userSelection,
-                confirmedTime: Date.now()
+                confirmedTime: Date.now(),
+                loginTime: currentUser.loginTime || Date.now()
             };
+
+            console.log('사용자 데이터 저장 시도:', userData);
 
             if (database) {
                 database.ref('users/' + userId).set(userData)
                     .then(() => {
-                        console.log('선택이 저장되었습니다.');
+                        console.log('✅ Firebase에 사용자 데이터 저장 완료');
                     })
                     .catch(error => {
-                        console.error('저장 오류:', error);
+                        console.error('❌ Firebase 저장 오류:', error);
                         saveToLocalStorage(userData);
                     });
             } else {
                 saveToLocalStorage(userData);
             }
+        }
+
+        // 초기 사용자 등록 (로그인 시점에 Firebase에 등록)
+        function registerUserToFirebase() {
+            if (!database || !userId) return;
+
+            const userData = {
+                name: currentUser.name,
+                employeeId: currentUser.employeeId,
+                position: currentUser.position,
+                selection: ['?', '?', '?', '?'],
+                loginTime: currentUser.loginTime || Date.now(),
+                lastActiveTime: Date.now()
+            };
+
+            console.log('초기 사용자 등록:', userData);
+
+            database.ref('users/' + userId).set(userData)
+                .then(() => {
+                    console.log('✅ 사용자 초기 등록 완료');
+                })
+                .catch(error => {
+                    console.error('❌ 사용자 등록 오류:', error);
+                });
         }
 
         // 로컬스토리지에 저장
