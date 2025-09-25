@@ -999,16 +999,27 @@
             return Array.from(winners);
         }
 
-        // 참여자 중에서 추첨 (개선된 버전)
+        // 참여자 중에서 추첨 (개선된 버전 + 디버깅)
         function startParticipantDraw() {
-            if (isDrawing) return;
+            console.log('🎯 참여자 추첨 버튼 클릭됨!');
+            
+            if (isDrawing) {
+                console.log('이미 추첨 진행 중이므로 취소');
+                return;
+            }
 
             const participantUsers = Object.entries(users).filter(([_, userData]) => 
                 userData.selection && !userData.selection.includes('?')
             );
 
+            console.log('참여자 확인:', {
+                전체사용자: Object.keys(users).length,
+                번호확정사용자: participantUsers.length,
+                참여자목록: participantUsers.map(([_, userData]) => userData.name)
+            });
+
             if (participantUsers.length === 0) {
-                alert('번호를 선택한 참여자가 없습니다.');
+                alert('번호를 선택한 참여자가 없습니다.\n\nUser 페이지에서 먼저 번호를 선택하고 확정해주세요.');
                 return;
             }
 
@@ -1022,13 +1033,15 @@
                     !previousWinners.includes(`${userData.name} ${userData.position}`)
                 );
 
-                console.log('참여자 추첨 - 전체 참여자:', participantUsers.length);
-                console.log('참여자 추첨 - 이전 당첨자:', previousWinners);
-                console.log('참여자 추첨 - 당첨 가능자:', eligibleUsers.length);
+                console.log('중복 당첨 방지 적용:', {
+                    이전당첨자: previousWinners,
+                    당첨가능자: eligibleUsers.length,
+                    당첨가능자목록: eligibleUsers.map(([_, userData]) => userData.name)
+                });
 
                 if (eligibleUsers.length === 0) {
                     // 모든 참여자가 이미 당첨된 상황
-                    console.log('모든 참여자가 이미 당첨됨 - 랜덤 번호로 추첨');
+                    console.log('모든 참여자가 이미 당첨됨 - 사용자 선택 요청');
                     
                     const shouldContinue = confirm(
                         `모든 참여자(${participantUsers.length}명)가 이미 당첨된 적이 있습니다.\n\n` +
@@ -1038,6 +1051,7 @@
                     );
 
                     if (!shouldContinue) {
+                        console.log('사용자가 추첨 중단 선택');
                         return;
                     }
 
@@ -1060,13 +1074,18 @@
             const randomUser = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
             const winnerSelection = randomUser[1].selection;
 
-            console.log('참여자 추첨 - 선택된 당첨자:', randomUser[1].name, winnerSelection);
+            console.log('참여자 추첨 - 선택된 당첨자:', {
+                이름: randomUser[1].name,
+                직위: randomUser[1].position,
+                선택번호: winnerSelection
+            });
 
             // 당첨 번호를 선택된 참여자의 번호로 설정
             gameSettings.winningCode = [...winnerSelection];
             updateWinningCodeDisplay();
 
             // 참여자 추첨으로 진행
+            console.log('참여자 추첨 시작!');
             startDrawCommon('participant', `당첨 예정자: ${randomUser[1].name} ${randomUser[1].position}`);
         }
 
