@@ -69,7 +69,7 @@
             color: #dc2626;
         }
 
-        /* 추첨 제어 패널 */
+        /* 추첨 제어 패널 개선 */
         .draw-control {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -93,8 +93,77 @@
         .draw-buttons {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .draw-options {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e5e7eb;
+        }
+
+        .draw-options h3 {
+            color: #374151;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #cbd5e1;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .toggle.active {
+            background: #10b981;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .toggle.active .toggle-slider {
+            transform: translateX(26px);
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .participant-info {
+            background: #e0f2fe;
+            border: 1px solid #0891b2;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #0c4a6e;
         }
 
         .draw-status {
@@ -105,6 +174,7 @@
             margin-bottom: 20px;
             font-weight: 600;
             color: #0c4a6e;
+            transition: all 0.3s ease;
         }
 
         /* 탭 시스템 */
@@ -539,6 +609,22 @@
             .draw-buttons {
                 flex-direction: column;
                 align-items: center;
+                gap: 10px;
+            }
+
+            .btn-large {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .draw-options {
+                padding: 15px;
+            }
+
+            .toggle-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
             }
 
             .options-grid,
@@ -574,7 +660,7 @@
             </div>
         </div>
 
-        <!-- 추첨 제어 패널 -->
+        <!-- 추첨 제어 패널 (개선된 버전) -->
         <div class="draw-control">
             <h2>🎮 추첨 제어</h2>
             
@@ -582,13 +668,38 @@
                 추첨 대기 중 - 언제든지 추첨을 시작할 수 있습니다
             </div>
 
+            <!-- 추첨 옵션 -->
+            <div class="draw-options">
+                <h3>⚙️ 추첨 옵션</h3>
+                
+                <div class="toggle-container">
+                    <div class="toggle" id="duplicateToggle">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <div class="toggle-label">중복 당첨 방지 (이전 당첨자 제외)</div>
+                </div>
+
+                <div class="participant-info" id="participantInfo">
+                    현재 참여자: 0명 | 이전 당첨자: 0명
+                </div>
+            </div>
+
+            <!-- 추첨 버튼들 -->
             <div class="draw-buttons">
                 <button id="startDrawBtn" class="btn btn-primary btn-large">
-                    🚀 추첨 시작
+                    🚀 일반 추첨
+                </button>
+                <button id="participantDrawBtn" class="btn btn-success btn-large">
+                    🎯 참여자 추첨
                 </button>
                 <button id="resetDrawBtn" class="btn btn-danger btn-large" disabled>
                     🔄 추첨 리셋
                 </button>
+            </div>
+
+            <div style="margin-top: 15px; font-size: 14px; color: #6b7280;">
+                <p><strong>일반 추첨:</strong> 관리자가 설정한 당첨 번호로 추첨</p>
+                <p><strong>참여자 추첨:</strong> 등록된 참여자 번호 중에서 랜덤 선택</p>
             </div>
         </div>
 
@@ -759,6 +870,7 @@
         let users = {};
         let drawHistory = [];
         let isDrawing = false;
+        let preventDuplicateWin = false; // 중복 당첨 방지 설정
 
         // DOM 요소들
         const positionsContainer = document.getElementById('positionsContainer');
@@ -770,7 +882,7 @@
         const saveIndicator = document.getElementById('saveIndicator');
         const drawStatusDisplay = document.getElementById('drawStatusDisplay');
 
-        // 페이지 초기화
+        // 페이지 초기화 및 백그라운드 작업 설정
         function initializePage() {
             loadAllData();
             renderPositionInputs();
@@ -778,6 +890,50 @@
             updateWinningCodeDisplay();
             setupEventListeners();
             setupTabs();
+            
+            // 백그라운드 작업 지원
+            setupBackgroundSync();
+        }
+
+        // 페이지 초기화 및 백그라운드 작업 설정
+        function initializePage() {
+            loadAllData();
+            renderPositionInputs();
+            renderManualSelectors();
+            updateWinningCodeDisplay();
+            setupEventListeners();
+            setupTabs();
+            
+            // 백그라운드 작업 지원 (주기적 동기화 제거)
+            setupBackgroundSync();
+        }
+
+        // 백그라운드 동기화 설정 (실시간 우선)
+        function setupBackgroundSync() {
+            // 페이지 가시성 감지
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    console.log('Admin 페이지 복귀 - 강제 동기화');
+                    // 실시간 리스너가 있으므로 별도 로드 불필요
+                    updateParticipantInfo();
+                }
+            });
+
+            // 윈도우 포커스 감지
+            window.addEventListener('focus', () => {
+                console.log('Admin 페이지 포커스');
+                updateParticipantInfo();
+            });
+
+            // 추첨 완료 감지를 위한 리스너 (한 번만 설정)
+            if (database) {
+                database.ref('drawState/completed').on('value', (snapshot) => {
+                    if (snapshot.val() === true && isDrawing) {
+                        console.log('추첨 완료 신호 받음');
+                        finishDraw();
+                    }
+                });
+            }
         }
 
         // 탭 시스템 설정
@@ -802,23 +958,134 @@
             });
         }
 
-        // 추첨 제어 함수들
-        function startDraw() {
+        // 참여자 정보 업데이트 (더 자세한 정보 표시)
+        function updateParticipantInfo() {
+            const totalUsers = Object.keys(users).length;
+            const confirmedUsers = Object.entries(users).filter(([_, userData]) => 
+                userData.selection && !userData.selection.includes('?')
+            ).length;
+            const previousWinners = getPreviousWinners();
+            const eligibleUsers = preventDuplicateWin ? 
+                Object.entries(users).filter(([_, userData]) => 
+                    userData.selection && !userData.selection.includes('?') &&
+                    !previousWinners.includes(`${userData.name} ${userData.position}`)
+                ).length : confirmedUsers;
+            
+            let infoHtml = `
+                현재 참여자: <strong>${totalUsers}명</strong> | 
+                번호 확정: <strong>${confirmedUsers}명</strong> | 
+                이전 당첨자: <strong>${previousWinners.length}명</strong>
+            `;
+
+            if (preventDuplicateWin) {
+                infoHtml += `<br>당첨 가능자: <strong>${eligibleUsers}명</strong>`;
+                
+                if (eligibleUsers === 0 && confirmedUsers > 0) {
+                    infoHtml += ` <span style="color: #dc2626; font-weight: bold;">⚠️ 참여자 추첨시 랜덤 번호로 진행됩니다</span>`;
+                }
+            }
+            
+            document.getElementById('participantInfo').innerHTML = infoHtml;
+        }
+
+        // 이전 당첨자 목록 가져오기
+        function getPreviousWinners() {
+            const winners = new Set();
+            drawHistory.forEach(draw => {
+                if (draw.winners && Array.isArray(draw.winners)) {
+                    draw.winners.forEach(winner => winners.add(winner));
+                }
+            });
+            return Array.from(winners);
+        }
+
+        // 참여자 중에서 추첨 (개선된 버전)
+        function startParticipantDraw() {
             if (isDrawing) return;
 
-            if (Object.keys(users).length === 0) {
-                alert('등록된 사용자가 없습니다. 먼저 사용자를 등록해주세요.');
+            const participantUsers = Object.entries(users).filter(([_, userData]) => 
+                userData.selection && !userData.selection.includes('?')
+            );
+
+            if (participantUsers.length === 0) {
+                alert('번호를 선택한 참여자가 없습니다.');
                 return;
             }
 
-            console.log('추첨 시작 버튼 클릭됨');
+            // 중복 당첨 방지 옵션 적용
+            let eligibleUsers = participantUsers;
+            let fallbackMessage = '';
+            
+            if (preventDuplicateWin) {
+                const previousWinners = getPreviousWinners();
+                eligibleUsers = participantUsers.filter(([_, userData]) => 
+                    !previousWinners.includes(`${userData.name} ${userData.position}`)
+                );
+
+                console.log('참여자 추첨 - 전체 참여자:', participantUsers.length);
+                console.log('참여자 추첨 - 이전 당첨자:', previousWinners);
+                console.log('참여자 추첨 - 당첨 가능자:', eligibleUsers.length);
+
+                if (eligibleUsers.length === 0) {
+                    // 모든 참여자가 이미 당첨된 상황
+                    console.log('모든 참여자가 이미 당첨됨 - 랜덤 번호로 추첨');
+                    
+                    const shouldContinue = confirm(
+                        `모든 참여자(${participantUsers.length}명)가 이미 당첨된 적이 있습니다.\n\n` +
+                        `다음 중 선택해주세요:\n` +
+                        `✅ 확인: 랜덤 번호로 추첨 (아무도 당첨되지 않을 수 있음)\n` +
+                        `❌ 취소: 추첨 중단`
+                    );
+
+                    if (!shouldContinue) {
+                        return;
+                    }
+
+                    // 랜덤 번호 생성하여 추첨 (일반 추첨과 동일)
+                    console.log('랜덤 번호로 추첨 진행');
+                    fallbackMessage = '(모든 참여자가 이전에 당첨되어 랜덤 번호로 추첨됨)';
+                    
+                    // 랜덤 당첨번호 생성
+                    gameSettings.winningCode = gameSettings.positions.map(position => 
+                        position[Math.floor(Math.random() * position.length)]
+                    );
+                    updateWinningCodeDisplay();
+                    
+                    // 일반 추첨으로 진행
+                    return startDrawCommon('fallback', fallbackMessage);
+                }
+            }
+
+            // 정상적인 참여자 추첨 진행
+            const randomUser = eligibleUsers[Math.floor(Math.random() * eligibleUsers.length)];
+            const winnerSelection = randomUser[1].selection;
+
+            console.log('참여자 추첨 - 선택된 당첨자:', randomUser[1].name, winnerSelection);
+
+            // 당첨 번호를 선택된 참여자의 번호로 설정
+            gameSettings.winningCode = [...winnerSelection];
+            updateWinningCodeDisplay();
+
+            // 참여자 추첨으로 진행
+            startDrawCommon('participant', `당첨 예정자: ${randomUser[1].name} ${randomUser[1].position}`);
+        }
+
+        // 일반 추첨 시작
+        function startDraw() {
+            return startDrawCommon(null);
+        }
+        function startDrawCommon(isAuto = null) {
+            if (isDrawing) return;
+
+            console.log('추첨 시작:', isAuto === null ? '일반 추첨' : '참여자 추첨');
             isDrawing = true;
             document.getElementById('startDrawBtn').disabled = true;
+            document.getElementById('participantDrawBtn').disabled = true;
             document.getElementById('resetDrawBtn').disabled = false;
             drawStatusDisplay.textContent = '추첨 신호 전송 중... draw.html을 확인하세요!';
 
-            // 자동 모드면 새 당첨 번호 생성
-            if (gameSettings.isAutoMode) {
+            // 자동 모드면 새 당첨 번호 생성 (일반 추첨인 경우만)
+            if (isAuto === null && gameSettings.isAutoMode) {
                 generateWinningCode();
             }
 
@@ -831,7 +1098,8 @@
                         started: true,
                         timestamp: Date.now(),
                         winningCode: gameSettings.winningCode,
-                        gameSettings: gameSettings // 최신 게임 설정도 함께 전송
+                        gameSettings: gameSettings,
+                        drawType: isAuto === null ? 'normal' : 'participant'
                     };
                     
                     console.log('Firebase에 추첨 데이터 전송:', drawData);
@@ -842,14 +1110,6 @@
                 if (database) {
                     console.log('추첨 시작 신호 전송 완료!');
                     drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
-
-                    // 추첨 완료 감지
-                    database.ref('drawState/completed').on('value', (snapshot) => {
-                        if (snapshot.val() === true && isDrawing) {
-                            console.log('추첨 완료 신호 받음');
-                            finishDraw();
-                        }
-                    });
                 } else {
                     // 오프라인 모드에서는 12초 후 자동 완료
                     setTimeout(finishDraw, 12000);
@@ -859,6 +1119,7 @@
                 alert('추첨 시작에 실패했습니다.');
                 isDrawing = false;
                 document.getElementById('startDrawBtn').disabled = false;
+                document.getElementById('participantDrawBtn').disabled = false;
                 document.getElementById('resetDrawBtn').disabled = true;
             });
         }
@@ -920,7 +1181,7 @@
             }
         }
 
-        // 모든 데이터 로드 및 실시간 감지
+        // 모든 데이터 로드 및 강력한 실시간 감지
         function loadAllData() {
             if (!database) {
                 // 오프라인 모드
@@ -936,7 +1197,7 @@
                 return;
             }
 
-            // Firebase에서 실시간 데이터 감지
+            // Firebase에서 실시간 데이터 감지 (on 사용)
             database.ref('gameSettings').on('value', (snapshot) => {
                 if (snapshot.val()) {
                     gameSettings = snapshot.val();
@@ -944,6 +1205,7 @@
                     renderManualSelectors();
                     updateWinningCodeDisplay();
                     updateModeSelection();
+                    console.log('Admin: 게임 설정 실시간 업데이트');
                 }
             });
 
@@ -951,15 +1213,15 @@
             database.ref('users').on('value', (snapshot) => {
                 users = snapshot.val() || {};
                 renderUsersTable();
+                console.log('Admin: 사용자 데이터 실시간 업데이트');
             });
 
-            // 히스토리 데이터 실시간 감지 (배열/객체 처리 개선)
+            // 히스토리 데이터 실시간 감지
             database.ref('drawHistory').on('value', (snapshot) => {
                 const historyData = snapshot.val();
                 if (historyData) {
-                    // Firebase에서 객체로 저장된 경우 배열로 변환
                     if (Array.isArray(historyData)) {
-                        drawHistory = historyData.filter(item => item); // null 값 제거
+                        drawHistory = historyData.filter(item => item);
                     } else if (typeof historyData === 'object') {
                         drawHistory = Object.values(historyData).filter(item => item);
                     } else {
@@ -968,9 +1230,54 @@
                 } else {
                     drawHistory = [];
                 }
-                console.log('히스토리 데이터 로드됨:', drawHistory);
                 renderHistoryTable();
+                console.log('Admin: 히스토리 데이터 실시간 업데이트');
             });
+
+            // 추첨 상태 실시간 감지
+            database.ref('drawState').on('value', (snapshot) => {
+                const drawState = snapshot.val();
+                if (drawState) {
+                    updateDrawControlsStatus(drawState);
+                    console.log('Admin: 추첨 상태 실시간 업데이트:', drawState);
+                }
+            });
+
+            console.log('Admin: 모든 실시간 리스너 설정 완료');
+        }
+
+        // 추첨 컨트롤 상태 업데이트
+        function updateDrawControlsStatus(drawState) {
+            const startBtn = document.getElementById('startDrawBtn');
+            const resetBtn = document.getElementById('resetDrawBtn');
+            const drawStatusDisplay = document.getElementById('drawStatusDisplay');
+
+            if (drawState.isActive && drawState.started && !drawState.completed) {
+                // 추첨 진행 중
+                isDrawing = true;
+                startBtn.disabled = true;
+                document.getElementById('participantDrawBtn').disabled = true;
+                resetBtn.disabled = false;
+                drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
+                drawStatusDisplay.style.background = '#3b82f6';
+            } else if (drawState.completed) {
+                // 추첨 완료
+                isDrawing = false;
+                startBtn.disabled = false;
+                document.getElementById('participantDrawBtn').disabled = false;
+                resetBtn.disabled = false;
+                drawStatusDisplay.textContent = '추첨 완료! 당첨자를 확인하세요.';
+                drawStatusDisplay.style.background = '#10b981';
+            } else {
+                // 대기 상태
+                isDrawing = false;
+                startBtn.disabled = false;
+                document.getElementById('participantDrawBtn').disabled = false;
+                resetBtn.disabled = true;
+                drawStatusDisplay.textContent = '추첨 대기 중 - 언제든지 추첨을 시작할 수 있습니다';
+                drawStatusDisplay.style.background = '#f0f9ff';
+                drawStatusDisplay.style.color = '#0c4a6e';
+            }
         }
 
         // 모든 화면 업데이트
