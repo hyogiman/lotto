@@ -1265,38 +1265,61 @@
             console.log('Admin: 모든 실시간 리스너 설정 완료');
         }
 
-        // 추첨 컨트롤 상태 업데이트
+        // 추첨 컨트롤 상태 업데이트 (개선된 버전)
         function updateDrawControlsStatus(drawState) {
             const startBtn = document.getElementById('startDrawBtn');
             const resetBtn = document.getElementById('resetDrawBtn');
+            const participantBtn = document.getElementById('participantDrawBtn');
             const drawStatusDisplay = document.getElementById('drawStatusDisplay');
+
+            // 참여자 수 확인
+            const totalUsers = Object.keys(users).length;
+            const confirmedUsers = Object.entries(users).filter(([_, userData]) => 
+                userData.selection && !userData.selection.includes('?')
+            ).length;
 
             if (drawState.isActive && drawState.started && !drawState.completed) {
                 // 추첨 진행 중
                 isDrawing = true;
                 startBtn.disabled = true;
-                document.getElementById('participantDrawBtn').disabled = true;
+                participantBtn.disabled = true;
                 resetBtn.disabled = false;
                 drawStatusDisplay.textContent = '추첨 진행 중... draw.html에서 확인하세요!';
                 drawStatusDisplay.style.background = '#3b82f6';
+                drawStatusDisplay.style.color = 'white';
             } else if (drawState.completed) {
                 // 추첨 완료
                 isDrawing = false;
                 startBtn.disabled = false;
-                document.getElementById('participantDrawBtn').disabled = false;
+                participantBtn.disabled = confirmedUsers === 0; // 확정된 참여자가 없으면 비활성화
                 resetBtn.disabled = false;
                 drawStatusDisplay.textContent = '추첨 완료! 당첨자를 확인하세요.';
                 drawStatusDisplay.style.background = '#10b981';
+                drawStatusDisplay.style.color = 'white';
             } else {
                 // 대기 상태
                 isDrawing = false;
                 startBtn.disabled = false;
-                document.getElementById('participantDrawBtn').disabled = false;
+                participantBtn.disabled = confirmedUsers === 0; // 확정된 참여자가 없으면 비활성화
                 resetBtn.disabled = true;
                 drawStatusDisplay.textContent = '추첨 대기 중 - 언제든지 추첨을 시작할 수 있습니다';
                 drawStatusDisplay.style.background = '#f0f9ff';
                 drawStatusDisplay.style.color = '#0c4a6e';
             }
+
+            // 참여자 추첨 버튼에 툴팁 같은 효과
+            if (confirmedUsers === 0) {
+                participantBtn.title = '번호를 확정한 참여자가 없습니다';
+            } else {
+                participantBtn.title = `${confirmedUsers}명의 참여자 중에서 추첨`;
+            }
+
+            console.log('추첨 컨트롤 상태 업데이트:', {
+                전체사용자: totalUsers,
+                확정사용자: confirmedUsers,
+                참여자추첨버튼: participantBtn.disabled ? '비활성화' : '활성화',
+                추첨상태: drawState
+            });
         }
 
         // 모든 화면 업데이트
