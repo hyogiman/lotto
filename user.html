@@ -733,7 +733,7 @@
         let isSelectionConfirmed = false;
         let userId = null;
 
-        // DOM 요소들
+        // DOM 요소들 (백투웨이팅 버튼 제거 - 동적으로 처리)
         const loginScreen = document.getElementById('loginScreen');
         const mainScreen = document.getElementById('mainScreen');
         const initialLogin = document.getElementById('initialLogin');
@@ -748,7 +748,6 @@
         const confirmedDisplay = document.getElementById('confirmedDisplay');
         const confirmBtn = document.getElementById('confirmBtn');
         const resultNotification = document.getElementById('resultNotification');
-        const backToWaitingBtn = document.getElementById('backToWaitingBtn');
 
         // 페이지 초기화 및 백그라운드 동기화 설정
         function initializePage() {
@@ -1113,7 +1112,7 @@
             showResultState(isWinner, winningCode);
         }
 
-        // 결과 상태 표시 (대기 버튼 포함)
+        // 결과 상태 표시 (대기 버튼 포함 + 이벤트 리스너 추가)
         function showResultState(isWinner, winningCode) {
             loadingState.style.display = 'none';
             selectionState.style.display = 'none';
@@ -1143,6 +1142,11 @@
                     </div>
                 `;
             }
+
+            // 버튼 이벤트 리스너 설정 (DOM이 업데이트된 후)
+            setTimeout(() => {
+                setupBackToWaitingButton();
+            }, 100);
         }
 
         // 추첨 대기 상태로 돌아가기
@@ -1402,7 +1406,12 @@
             // 메인 화면 버튼들
             document.getElementById('confirmBtn').addEventListener('click', confirmSelection);
             document.getElementById('logoutBtn').addEventListener('click', logout);
-            document.getElementById('backToWaitingBtn').addEventListener('click', backToWaitingState);
+            
+            // backToWaitingBtn은 나중에 동적으로 추가되므로 안전하게 처리
+            const backBtn = document.getElementById('backToWaitingBtn');
+            if (backBtn) {
+                backBtn.addEventListener('click', backToWaitingState);
+            }
 
             // 엔터키 처리
             document.getElementById('employeeId').addEventListener('keypress', (e) => {
@@ -1417,6 +1426,16 @@
             document.getElementById('quickEmployeeId').addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') performQuickLogin();
             });
+        }
+
+        // 추가적으로 버튼이 생성된 후에 이벤트 리스너 추가
+        function setupBackToWaitingButton() {
+            const backBtn = document.getElementById('backToWaitingBtn');
+            if (backBtn && !backBtn.hasAttribute('data-listener-added')) {
+                backBtn.addEventListener('click', backToWaitingState);
+                backBtn.setAttribute('data-listener-added', 'true');
+                console.log('추첨 대기 버튼 이벤트 리스너 추가됨');
+            }
         }
 
         // 전역 함수 (더 이상 필요없음 - 드롭다운 사용)
