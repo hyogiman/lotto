@@ -891,19 +891,6 @@
             setupEventListeners();
             setupTabs();
             
-            // 백그라운드 작업 지원
-            setupBackgroundSync();
-        }
-
-        // 페이지 초기화 및 백그라운드 작업 설정
-        function initializePage() {
-            loadAllData();
-            renderPositionInputs();
-            renderManualSelectors();
-            updateWinningCodeDisplay();
-            setupEventListeners();
-            setupTabs();
-            
             // 백그라운드 작업 지원 (주기적 동기화 제거)
             setupBackgroundSync();
         }
@@ -1399,14 +1386,16 @@
             });
 
             // 입력 필드 이벤트 리스너 추가
-            positionsContainer.addEventListener('input', (e) => {
+            // renderPositionInputs()가 여러 번 호출되어도 이벤트가 중복 등록되지 않도록 oninput 사용
+            positionsContainer.oninput = (e) => {
                 if (e.target.classList.contains('option-input')) {
                     const posIndex = parseInt(e.target.dataset.position);
                     const optIndex = parseInt(e.target.dataset.option);
-                    gameSettings.positions[posIndex][optIndex] = e.target.value;
+                    gameSettings.positions[posIndex][optIndex] = e.target.value.trim() || '?';
                     renderManualSelectors();
+                    updateWinningCodeDisplay();
                 }
-            });
+            };
         }
 
         // 수동 선택 드롭다운 렌더링
@@ -1675,7 +1664,18 @@
 
             // 추첨 제어 버튼들
             document.getElementById('startDrawBtn').addEventListener('click', startDraw);
+            document.getElementById('participantDrawBtn').addEventListener('click', startParticipantDraw);
             document.getElementById('resetDrawBtn').addEventListener('click', resetDraw);
+
+            // 중복 당첨 방지 토글
+            const duplicateToggle = document.getElementById('duplicateToggle');
+            if (duplicateToggle) {
+                duplicateToggle.addEventListener('click', () => {
+                    preventDuplicateWin = !preventDuplicateWin;
+                    duplicateToggle.classList.toggle('active', preventDuplicateWin);
+                    updateParticipantInfo();
+                });
+            }
 
             // 게임 설정 버튼들
             document.getElementById('generateBtn').addEventListener('click', generateWinningCode);

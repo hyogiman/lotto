@@ -464,6 +464,7 @@
         let isDrawing = false;
         let currentDrawingPosition = 0;
         let slotIntervals = [];
+        let activeDrawState = null;
 
         // DOM 요소들
         const slotsContainer = document.getElementById('slotsContainer');
@@ -510,11 +511,12 @@
                     console.log('백그라운드에서 추첨 시작 신호 감지 - 자동 실행!');
                     
                     // 최신 게임 설정도 함께 로드
+                    activeDrawState = drawState;
                     if (drawState.gameSettings) {
                         gameSettings = drawState.gameSettings;
-                        currentWinningCode = drawState.winningCode || gameSettings.winningCode;
-                        initializeSlots();
                     }
+                    currentWinningCode = drawState.winningCode || gameSettings.winningCode || ['?', '?', '?', '?'];
+                    initializeSlots();
                     
                     // 추첨 자동 시작
                     drawStatus.textContent = '백그라운드에서 추첨 신호를 받았습니다!';
@@ -541,7 +543,13 @@
                 // 추첨 상태 감지 (관리자가 추첨을 시작하면)
                 database.ref('drawState').on('value', (snapshot) => {
                     const drawState = snapshot.val();
-                    if (drawState && drawState.isActive && !isDrawing) {
+                    if (drawState && drawState.isActive && drawState.started && !isDrawing) {
+                        activeDrawState = drawState;
+                        if (drawState.gameSettings) {
+                            gameSettings = drawState.gameSettings;
+                        }
+                        currentWinningCode = drawState.winningCode || gameSettings.winningCode || ['?', '?', '?', '?'];
+                        initializeSlots();
                         startDraw();
                     } else if (drawState && drawState.shouldReset) {
                         resetDraw();
@@ -616,13 +624,14 @@
             
             drawStatus.textContent = '추첨 진행 중...';
             
-            // 자동 모드면 새 당첨 번호 생성
-            if (gameSettings.isAutoMode) {
-                currentWinningCode = gameSettings.positions.map(position => 
+            // 당첨 번호는 관리자 화면에서 확정한 drawState.winningCode를 그대로 사용
+            // draw 화면에서 다시 랜덤 생성하면 관리자/사용자/추첨 화면 결과가 서로 달라질 수 있음
+            currentWinningCode = currentWinningCode && !currentWinningCode.includes('?')
+                ? currentWinningCode
+                : (activeDrawState && activeDrawState.winningCode) || gameSettings.winningCode || gameSettings.positions.map(position => 
                     position[Math.floor(Math.random() * position.length)]
                 );
-                gameSettings.winningCode = currentWinningCode;
-            }
+            gameSettings.winningCode = currentWinningCode;
 
             // 모든 슬롯 리셋
             resetAllSlots();
@@ -644,9 +653,15 @@
             });
         }
 
+        // 슬롯 아이템 실제 높이 계산 (모바일에서 CSS 높이가 달라져도 정렬 유지)
+        function getSlotItemHeight(reel) {
+            const item = reel ? reel.querySelector('.slot-item') : null;
+            return item ? item.offsetHeight : 200;
+        }
+
         // 다음 슬롯 추첨
         function drawNextSlot() {
-            if (currentDrawingPosition >= 4) {
+            if (currentDrawingPosition >= gameSettings.positions.length) {
                 finishDraw();
                 return;
             }
@@ -656,6 +671,7 @@
             const reel = document.getElementById(`reel-${slotIndex}`);
             const targetValue = currentWinningCode[slotIndex];
             const position = gameSettings.positions[slotIndex];
+            const itemHeight = getSlotItemHeight(reel);
             
             // 슬롯 스피닝 상태로 변경
             slot.classList.add('spinning');
@@ -664,7 +680,7 @@
             let spinCount = 0;
             const maxSpins = 60; // 3초 * 20fps (더 빠르게)
             const spinInterval = setInterval(() => {
-                const randomOffset = Math.floor(Math.random() * position.length) * 200; // 각 아이템 높이 200px
+                const randomOffset = Math.floor(Math.random() * position.length) * itemHeight;
                 reel.style.transform = `translateY(-${randomOffset}px)`;
                 
                 spinCount++;
@@ -673,8 +689,8 @@
                     clearInterval(spinInterval);
                     
                     // 최종 위치로 이동 (목표 값 위치)
-                    const targetIndex = position.indexOf(targetValue);
-                    const finalOffset = targetIndex * 200;
+                    const targetIndex = Math.max(0, position.indexOf(targetValue));
+                    const finalOffset = targetIndex * itemHeight;
                     reel.style.transform = `translateY(-${finalOffset}px)`;
                     
                     // 확정 상태로 변경
@@ -706,16 +722,17 @@
             }, 1000);
             
             // Firebase 추첨 상태 업데이트
+            // set()으로 전체 drawState를 덮어쓰지 않고 update()로 당첨번호와 완료 상태를 보존/공유
             if (database) {
-                database.ref('drawState').set({
+                database.ref('drawState').update({
                     isActive: false,
                     completed: true,
-                    timestamp: Date.now()
+                    finishedAt: Date.now(),
+                    winningCode: currentWinningCode,
+                    shouldReset: false
                 });
+                database.ref('gameSettings/winningCode').set(currentWinningCode);
             }
-            
-            // Firebase에 결과 저장 (있다면)
-            saveDrawResult();
         }
 
         // 파티클 효과 생성

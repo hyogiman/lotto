@@ -492,9 +492,6 @@
                 font-size: 1.2rem;
                 letter-spacing: 3px;
             }
-        }padding: 14px 24px;
-                font-size: 16px;
-            }
         }
 
         /* 가로 모드 최적화 */
@@ -732,6 +729,7 @@
         let userSelection = ['?', '?', '?', '?'];
         let isSelectionConfirmed = false;
         let userId = null;
+        let realtimeListenersInitialized = false;
 
         // DOM 요소들 (백투웨이팅 버튼 다시 추가)
         const loginScreen = document.getElementById('loginScreen');
@@ -967,6 +965,11 @@
         // 모든 실시간 리스너 설정
         function setupAllRealtimeListeners() {
             if (!database || !userId) return;
+            if (realtimeListenersInitialized) {
+                console.log('실시간 리스너는 이미 설정되어 있습니다.');
+                return;
+            }
+            realtimeListenersInitialized = true;
 
             console.log('실시간 리스너 설정 시작...');
 
@@ -1268,13 +1271,14 @@
             });
 
             // 드롭다운 이벤트 리스너
-            selectionGrid.addEventListener('change', (e) => {
+            // renderSelectionGrid()가 여러 번 실행되어도 이벤트가 중복되지 않도록 onchange 사용
+            selectionGrid.onchange = (e) => {
                 if (e.target.classList.contains('option-select')) {
                     const position = parseInt(e.target.dataset.position);
                     const value = e.target.value;
                     selectOption(position, value);
                 }
-            });
+            };
         }
 
         // 번호 선택 (드롭다운용)
@@ -1339,23 +1343,33 @@
         function registerUserToFirebase() {
             if (!database || !userId) return;
 
-            const userData = {
-                name: currentUser.name,
-                employeeId: currentUser.employeeId,
-                position: currentUser.position,
-                selection: ['?', '?', '?', '?'],
-                loginTime: currentUser.loginTime || Date.now(),
-                lastActiveTime: Date.now()
-            };
+            const userRef = database.ref('users/' + userId);
 
-            console.log('초기 사용자 등록:', userData);
+            userRef.once('value')
+                .then((snapshot) => {
+                    const existingData = snapshot.val() || {};
 
-            database.ref('users/' + userId).set(userData)
+                    // 이미 선택/확정한 번호가 있으면 로그인만으로 초기화하지 않음
+                    const preservedSelection = existingData.selection || ['?', '?', '?', '?'];
+
+                    const userData = {
+                        ...existingData,
+                        name: currentUser.name,
+                        employeeId: currentUser.employeeId,
+                        position: currentUser.position,
+                        selection: preservedSelection,
+                        loginTime: existingData.loginTime || currentUser.loginTime || Date.now(),
+                        lastActiveTime: Date.now()
+                    };
+
+                    console.log('사용자 등록/갱신:', userData);
+                    return userRef.update(userData);
+                })
                 .then(() => {
-                    console.log('✅ 사용자 초기 등록 완료');
+                    console.log('✅ 사용자 등록/갱신 완료');
                 })
                 .catch(error => {
-                    console.error('❌ 사용자 등록 오류:', error);
+                    console.error('❌ 사용자 등록/갱신 오류:', error);
                 });
         }
 
@@ -1452,8 +1466,8 @@
         // 페이지 가시성 변경 감지 (앱 전환시 데이터 새로고침)
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && currentUser && mainScreen.style.display !== 'none') {
-                // 페이지가 다시 보일 때 최신 데이터 로드
-                loadGameData();
+                // 기존 리스너를 중복 생성하지 않고 최신 데이터만 동기화
+                forceSync();
             }
         });
     </script>
